@@ -215,7 +215,7 @@ in
       "networkmanager"
       "wheel"
     ];
-    hashedPasswordFile = builtins.toString ./secrets/skainswo-password.hash;
+    hashedPassword = pkgs.lib.strings.trim (builtins.readFile ./secrets/skainswo-password.hash);
     shell = pkgs.fish; # See https://discourse.nixos.org/t/how-to-get-vscodes-retry-as-sudo-to-work-on-nixos/68450/5?u=samuela
   };
   programs.fish.enable = true; # Necessary in order to use shell = pkgs.fish
