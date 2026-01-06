@@ -78,7 +78,7 @@ in
   services.flatpak.enable = true;
 
   stylix.enable = true;
-  stylix.image = /home/skainswo/wallpaper.jpg;
+  stylix.image = ./wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg;
   stylix.polarity = "dark";
   stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
   stylix.opacity.terminal = 0.9;
