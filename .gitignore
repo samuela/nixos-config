@@ -3,3 +3,6 @@ secrets/
 
 # Build products / symlinks
 result
+
+# build-vm images
+*.qcow2
