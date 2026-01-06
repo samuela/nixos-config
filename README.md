@@ -8,4 +8,4 @@ Personal NixOS configuration. Secrets stay untracked in `secrets/`.
 
 ## Deploy
 
-- Rebuild from this repo: `./rebuild.sh` (uses `-I nixos-config` to point at `configuration.nix` here).
+- Rebuild from this repo: `./rebuild.sh switch` (uses `-I nixos-config` to point at `configuration.nix` here).
