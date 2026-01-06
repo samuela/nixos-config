@@ -1,0 +1,5 @@
+# Secrets and sensitive artifacts
+secrets/
+
+# Build products / symlinks
+result
