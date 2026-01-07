@@ -89,6 +89,7 @@
             "right": [
                 {
                     "blacklist": [
+                        "*blue*"
                     ],
                     "colorizeIcons": false,
                     "drawerEnabled": false,
