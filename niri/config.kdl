@@ -392,6 +392,14 @@ binds {
     // XF86AudioMute        allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
     // XF86AudioMicMute     allow-when-locked=true { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
 
+    ////////////////////////////////////////////////////////////////////////////
+    // Volume buttons
+    // Use wpctl so Noctalia is the only OSD for volume changes:
+    // XF86AudioRaiseVolume  { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+"; }
+    // XF86AudioLowerVolume  { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-"; }
+    // XF86AudioMute         { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+
+    // Or, use swayosd:
     XF86AudioRaiseVolume  { spawn "swayosd-client" "--output-volume" "raise"; }
     XF86AudioLowerVolume  { spawn "swayosd-client" "--output-volume" "lower"; }
     XF86AudioMute         { spawn "swayosd-client" "--output-volume" "mute-toggle"; }
@@ -399,6 +407,7 @@ binds {
     // Shift-modified volume keys with macOS beep sound
     Shift+XF86AudioRaiseVolume { spawn "bash" "-c" "swayosd-client --output-volume raise && pw-play ~/.local/share/sounds/volume_beep.aif"; }
     Shift+XF86AudioLowerVolume { spawn "bash" "-c" "swayosd-client --output-volume lower && pw-play ~/.local/share/sounds/volume_beep.aif"; }
+
     XF86MonBrightnessDown { spawn "swayosd-client" "--brightness" "lower"; }
     XF86MonBrightnessUp   { spawn "swayosd-client" "--brightness" "raise"; }
 

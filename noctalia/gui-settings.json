@@ -357,10 +357,8 @@
         "backgroundOpacity": 0.75,
         "enabled": true,
         "enabledTypes": [
-            0,
-            1,
-            2,
-            4
+            4,
+            3
         ],
         "location": "bottom",
         "monitors": [
