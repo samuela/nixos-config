@@ -2,7 +2,9 @@
 
 Personal NixOS configuration. Secrets stay untracked in `secrets/`.
 
-Noctalia json configs are in `noctalia/` and I manually created symlinks pointing to them in `~/.config/noctalia/` so I can keep using the GUI settings.
+Noctalia json configs are in `noctalia/` and I manually created symlinks pointing to them in `~/.config/noctalia/` so I can keep using the GUI settings. Note that home-manager forcibly symlinks some other config items in `~/.config/noctalia/` which we do not bother messing with.
+
+Niri config in `niri/` is symlinked to `~/.config/niri`.
 
 ## Secrets
 
