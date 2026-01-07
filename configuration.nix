@@ -14,6 +14,15 @@ let
   # Tracking release-25.11 branch. Last updated 2025-12-12
   stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/a7fb3944d1fb4daa073ba82e1a9d34b5f05adb9f.tar.gz";
 
+  # Tracking https://github.com/noctalia-dev/noctalia-shell/commits/main. Last updated 2025-01-06
+  noctaliaSrc = builtins.fetchTree {
+    type = "tarball";
+    url = "https://github.com/noctalia-dev/noctalia-shell/archive/b81174b9f8329f697a5fbb72c672b0f886d733b5.tar.gz";
+    narHash = "sha256-l8gEFCHuZzlSQZMlmihNtJkPzhix/QnDGdZJlDfXRBM=";
+  };
+  noctaliaPackage = pkgs.callPackage "${noctaliaSrc.outPath}/nix/package.nix" { };
+  noctaliaHomeModule = import "${noctaliaSrc.outPath}/nix/home-module.nix";
+
   # Tracking nixpkgs-unstable branch. Last updated 2025-12-30
   unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/b9cd0cd124fe67c744e77782bf4b684a43cb44f3.tar.gz";
 
@@ -91,7 +100,7 @@ in
       package = pkgs.dejavu_fonts;
       name = "DejaVu Sans";
     };
-    # This is the font used by waybar.
+    # Monospace font for terminals and shell UI.
     monospace = {
       package = pkgs.nerd-fonts.dejavu-sans-mono;
       name = "DejaVu Sans Mono";
@@ -127,6 +136,7 @@ in
   # Enable the GNOME display manager
   services.displayManager.gdm.enable = true;
   services.displayManager.gdm.wayland = true;
+  services.gnome.evolution-data-server.enable = true;
 
   # A keyring is used by VSCode
   # services.gnome.gnome-keyring.enable = true;
@@ -273,6 +283,8 @@ in
       };
     in
     {
+      imports = [ noctaliaHomeModule ];
+
       # Necessary for pkexec to work in VSCode, esp. "Retry as Sudo". See https://nixos.wiki/wiki/Polkit#Authentication_agents.
       systemd.user.services.polkit-gnome-authentication-agent-1 = {
         Unit = {
@@ -346,7 +358,7 @@ in
       };
 
       home.pointerCursor = {
-        gtk.enable = true; # Necessary in order to get waybar to pick up the cursor theme.
+        gtk.enable = true; # Ensure Wayland clients pick up the cursor theme.
         package = pkgs.apple-cursor;
         name = "macOS";
         size = 22;
@@ -368,6 +380,11 @@ in
       programs.fish = {
         enable = true;
         inherit shellAliases;
+      };
+      programs.noctalia-shell = {
+        enable = true;
+        package = noctaliaPackage;
+        systemd.enable = true;
       };
       # programs.fuzzel.enable = true;
       programs.fzf.enable = true;
@@ -402,8 +419,6 @@ in
         enable = true;
         systemd.enable = true;
       };
-      programs.waybar.enable = true;
-      programs.waybar.systemd.enable = true;
       programs.wezterm.enable = true;
       programs.yazi.enable = true;
       programs.zoxide.enable = true;
