@@ -14,14 +14,11 @@ let
   # Tracking release-25.11 branch. Last updated 2025-12-12
   stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/a7fb3944d1fb4daa073ba82e1a9d34b5f05adb9f.tar.gz";
 
-  # Tracking https://github.com/noctalia-dev/noctalia-shell/commits/main. Last updated 2025-01-06
-  noctaliaSrc = builtins.fetchTree {
-    type = "tarball";
-    url = "https://github.com/noctalia-dev/noctalia-shell/archive/b81174b9f8329f697a5fbb72c672b0f886d733b5.tar.gz";
-    narHash = "sha256-l8gEFCHuZzlSQZMlmihNtJkPzhix/QnDGdZJlDfXRBM=";
-  };
-  noctaliaPackage = pkgs.callPackage "${noctaliaSrc.outPath}/nix/package.nix" { };
-  noctaliaHomeModule = import "${noctaliaSrc.outPath}/nix/home-module.nix";
+  # Tracking https://github.com/noctalia-dev/noctalia-shell/commits/main. Last updated 2025-01-12
+  noctaliaSrc = builtins.fetchTarball "https://github.com/noctalia-dev/noctalia-shell/archive/2b55ae2c348fcad50089bc334c4a8155b2941d3b.tar.gz";
+  # noctaliaSrc = ../noctalia-shell;
+  noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" { };
+  noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
 
   # Tracking nixpkgs-unstable branch. Last updated 2025-12-30
   unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/b9cd0cd124fe67c744e77782bf4b684a43cb44f3.tar.gz";
@@ -385,6 +382,7 @@ in
         enable = true;
         package = noctaliaPackage;
         systemd.enable = true;
+        systemd.mutableRuntimeSettings = true; # https://github.com/noctalia-dev/noctalia-shell/pull/1324
       };
       # programs.fuzzel.enable = true;
       programs.fzf.enable = true;
