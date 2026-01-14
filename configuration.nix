@@ -455,7 +455,6 @@ in
         "x-scheme-handler/signalcaptcha" = "signal.desktop";
       };
 
-      services.mako.enable = true;
       services.swayosd.enable = true;
       services.swayidle = {
         enable = true;
