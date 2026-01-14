@@ -242,7 +242,17 @@ in
   };
 
   services.tailscale.enable = true;
-  services.resolved.enable = true; # https://github.com/tailscale/tailscale/issues/4254
+  services.resolved = {
+    enable = true; # https://github.com/tailscale/tailscale/issues/4254
+    fallbackDns = [ ];
+    domains = [ "~." ];
+  };
+  # NETGEAR R6700v2 times out on AAAA lookups, so we manually override DNS config.
+  networking.nameservers = [
+    "1.1.1.1"
+    "9.9.9.9"
+  ];
+  networking.networkmanager.dns = "systemd-resolved";
   networking.useNetworkd = false; # ChatGPT suggested this line is also necessary, and it seems to work for now.
 
   # Enable Avahi for network service discovery (needed for Chromecast/AirPlay/Miracast)
