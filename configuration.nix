@@ -20,8 +20,8 @@ let
   noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" { };
   noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
 
-  # Tracking nixpkgs-unstable branch. Last updated 2025-12-30
-  unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/b9cd0cd124fe67c744e77782bf4b684a43cb44f3.tar.gz";
+  # Tracking nixpkgs-unstable branch. Last updated 2025-01-14
+  unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/13868c071cc73a5e9f610c47d7bb08e5da64fdd5.tar.gz";
 
   unstable-nixpkgs-patched = (import unstable-nixpkgs-src { }).applyPatches {
     name = "nixpkgs-patched";
@@ -352,6 +352,7 @@ in
         unstable-pkgs.claude-code
         unstable-pkgs.codex
         unstable-pkgs.gemini-cli
+        unstable-pkgs.gurk-rs # Using unstable due to https://github.com/boxdot/gurk-rs/issues/462
         unstable-pkgs.mkchromecast
         unstable-pkgs.vscode
         # unstable-pkgs.crush # https://github.com/NixOS/nixpkgs/issues/470068
@@ -359,7 +360,6 @@ in
         chromium
         clang # many rust libs require having a `cc`
         elan
-        gurk-rs
         impala
         jq
         nautilus # See https://github.com/YaLTeR/niri/issues/1863
