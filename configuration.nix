@@ -58,7 +58,6 @@ in
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
     (import "${home-manager}/nixos")
-    (import stylix).nixosModules.stylix
   ];
 
   # Bootloader.
@@ -82,32 +81,6 @@ in
 
   programs.niri.enable = true;
   services.flatpak.enable = true;
-
-  stylix.enable = true;
-  stylix.image = ./wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg;
-  stylix.polarity = "dark";
-  stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
-  stylix.opacity.terminal = 0.9;
-  stylix.fonts = {
-    serif = {
-      package = pkgs.dejavu_fonts;
-      name = "DejaVu Serif";
-    };
-    sansSerif = {
-      package = pkgs.dejavu_fonts;
-      name = "DejaVu Sans";
-    };
-    # Monospace font for terminals and shell UI.
-    monospace = {
-      package = pkgs.nerd-fonts.dejavu-sans-mono;
-      name = "DejaVu Sans Mono";
-    };
-    emoji = {
-      package = pkgs.noto-fonts-color-emoji;
-      name = "Noto Color Emoji";
-    };
-    sizes.terminal = 18;
-  };
 
   # Enable networking
   networking.networkmanager.enable = true;
@@ -326,7 +299,36 @@ in
       '';
     in
     {
-      imports = [ noctaliaHomeModule ];
+      imports = [
+        noctaliaHomeModule
+        (import stylix).homeModules.stylix
+      ];
+
+      stylix.enable = true;
+      stylix.image = ./wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg;
+      stylix.polarity = "dark";
+      stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
+      stylix.opacity.terminal = 0.9;
+      stylix.fonts = {
+        serif = {
+          package = pkgs.dejavu_fonts;
+          name = "DejaVu Serif";
+        };
+        sansSerif = {
+          package = pkgs.dejavu_fonts;
+          name = "DejaVu Sans";
+        };
+        # Monospace font for terminals and shell UI.
+        monospace = {
+          package = pkgs.nerd-fonts.dejavu-sans-mono;
+          name = "DejaVu Sans Mono";
+        };
+        emoji = {
+          package = pkgs.noto-fonts-color-emoji;
+          name = "Noto Color Emoji";
+        };
+        sizes.terminal = 18;
+      };
 
       # Necessary for pkexec to work in VSCode, esp. "Retry as Sudo". See https://nixos.wiki/wiki/Polkit#Authentication_agents.
       systemd.user.services.polkit-gnome-authentication-agent-1 = {
@@ -427,12 +429,16 @@ in
         enable = true;
         inherit shellAliases;
       };
+
       programs.noctalia-shell = {
         enable = true;
         package = noctaliaPackage;
         systemd.enable = true;
         systemd.mutableRuntimeSettings = true; # https://github.com/noctalia-dev/noctalia-shell/pull/1324
       };
+      # https://github.com/noctalia-dev/noctalia-shell/pull/1324#issuecomment-3752738837
+      stylix.targets.noctalia-shell.enable = false; # https://github.com/noctalia-dev/noctalia-shell/pull/1324#issuecomment-3747399960
+
       # programs.fuzzel.enable = true;
       programs.fzf.enable = true;
       programs.fzf.enableZshIntegration = true;
