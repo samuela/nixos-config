@@ -11,8 +11,8 @@ let
   # Last updated 2025-12-12
   nixos-hardware = builtins.fetchTarball "https://github.com/NixOS/nixos-hardware/archive/9154f4569b6cdfd3c595851a6ba51bfaa472d9f3.tar.gz";
 
-  # Tracking release-25.11 branch. Last updated 2025-12-12
-  stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/a7fb3944d1fb4daa073ba82e1a9d34b5f05adb9f.tar.gz";
+  # Tracking release-25.11 branch. Last updated 2025-01-14
+  stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/5ad96253be7ee7f66298d28a24ac8faba8e0fe54.tar.gz";
 
   # Tracking https://github.com/noctalia-dev/noctalia-shell/commits/main. Last updated 2025-01-12
   noctaliaSrc = builtins.fetchTarball "https://github.com/noctalia-dev/noctalia-shell/archive/2b55ae2c348fcad50089bc334c4a8155b2941d3b.tar.gz";
