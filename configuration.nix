@@ -288,6 +288,42 @@ in
         ns = "nix-shell";
         o = "xdg-open";
       };
+      smart-suspend = pkgs.writeScript "smart-suspend" ''
+        #!${pkgs.fish}/bin/fish
+
+        function log
+          printf '%s\n' $argv >&2
+        end
+
+        log "start"
+
+        # Avoid suspending while plugged into power (any line_power device online).
+        set line_powers (${pkgs.upower}/bin/upower -e | string match "*line_power*")
+        log "line_power devices: $line_powers"
+        for lp in $line_powers
+          if test -n "$lp"
+            if ${pkgs.upower}/bin/upower -i $lp | string match -q "*online: *yes*"
+              log "skip suspend: power online via $lp"
+              exit 0
+            end
+            log "power offline via $lp"
+          end
+        end
+
+        # Avoid suspending while audio capture or playback is active (e.g., in a call).
+        if ${pkgs.pulseaudio}/bin/pactl list sinks | string match -q "*State: RUNNING*"
+          log "skip suspend: audio sink running"
+          exit 0
+        end
+        if ${pkgs.pulseaudio}/bin/pactl list sources | string match -q "*State: RUNNING*"
+          log "skip suspend: audio source running"
+          exit 0
+        end
+
+        log "suspend-then-hibernate in 5s"
+        sleep 5
+        exec ${pkgs.systemd}/bin/systemctl suspend-then-hibernate
+      '';
     in
     {
       imports = [ noctaliaHomeModule ];
@@ -346,6 +382,9 @@ in
       #   rustfmt
       # ];
       ;
+
+      # Link smart-suspend for manual debugging. Note that this is not in PATH.
+      home.file.".local/bin/smart-suspend".source = smart-suspend;
 
       xdg.desktopEntries.gurk = {
         name = "Gurk";
@@ -460,13 +499,13 @@ in
         enable = true;
         timeouts = [
           {
-            timeout = 180;
+            timeout = 3 * 60;
             command = "${pkgs.niri}/bin/niri msg action power-off-monitors";
           }
 
           {
-            timeout = 240;
-            command = "${pkgs.systemd}/bin/systemctl suspend";
+            timeout = 5 * 60;
+            command = "${smart-suspend}";
           }
         ];
       };
