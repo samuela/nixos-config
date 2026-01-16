@@ -5,14 +5,14 @@
 { config, pkgs, ... }:
 
 let
-  # Tracking release-25.11 branch. Last updated 2025-12-12
-  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/44777152652bc9eacf8876976fa72cc77ca8b9d8.tar.gz";
+  # Tracking release-25.11 branch. Last updated 2025-01-15
+  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/82fb7dedaad83e5e279127a38ef410bcfac6d77c.tar.gz";
 
   # Last updated 2025-12-12
   nixos-hardware = builtins.fetchTarball "https://github.com/NixOS/nixos-hardware/archive/9154f4569b6cdfd3c595851a6ba51bfaa472d9f3.tar.gz";
 
-  # Tracking release-25.11 branch. Last updated 2025-01-14
-  stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/5ad96253be7ee7f66298d28a24ac8faba8e0fe54.tar.gz";
+  # Tracking release-25.11 branch. Last updated 2025-01-15
+  stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/362306faaa7459bebf8eabf135879785f3da9bd2.tar.gz";
 
   # Tracking https://github.com/noctalia-dev/noctalia-shell/commits/main. Last updated 2025-01-12
   noctaliaSrc = builtins.fetchTarball "https://github.com/noctalia-dev/noctalia-shell/archive/2b55ae2c348fcad50089bc334c4a8155b2941d3b.tar.gz";
@@ -468,10 +468,13 @@ in
       # programs.swaylock.enable = true;
       # programs.swaylock.package = pkgs.swaylock-effects;
       programs.tmux.enable = true;
+
       programs.vicinae = {
         enable = true;
         systemd.enable = true;
       };
+      stylix.targets.vicinae.enable = false;
+
       programs.wezterm.enable = true;
       programs.yazi.enable = true;
       programs.zoxide.enable = true;
