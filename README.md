@@ -2,9 +2,15 @@
 
 Personal NixOS configuration. Secrets stay untracked in `secrets/`.
 
-Noctalia json configs are in `noctalia/` and I manually created symlinks pointing to them in `~/.config/noctalia/` so I can keep using the GUI settings. Note that home-manager forcibly symlinks some other config items in `~/.config/noctalia/` which we do not bother messing with.
+`Wallpapers/` is intended to be symlinked into `~/Pictures/Wallpapers` for compatbility with noctalia. Some config files are in `.config/` which maps to `~/.config/` and should be symlinked as follows:
 
-Niri config in `niri/` is symlinked to `~/.config/niri`.
+```
+ln -s /home/skainswo/dev/nixos-config/Wallpapers ~/Pictures/Wallpapers
+ln -s /home/skainswo/dev/nixos-config/.config/niri/config.kdl ~/.config/niri/config.kdl
+ln -s /home/skainswo/dev/nixos-config/.config/noctalia/plugins.json ~/.config/noctalia/plugins.json
+ln -s /home/skainswo/dev/nixos-config/.config/noctalia/settings.json ~/.config/noctalia/settings.json
+ln -s /home/skainswo/dev/nixos-config/.config/vicinae/vicinae.json ~/.config/vicinae/vicinae.json
+```
 
 ## Secrets
 
