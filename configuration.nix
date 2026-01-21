@@ -177,7 +177,11 @@ in
     HibernateDelaySec=30m
   '';
 
-  services.logind.settings.Login.HandleLidSwitch = "suspend-then-hibernate";
+  # Ignore lid switch events and let swayidle's smart-suspend handle suspension.
+  # This allows smart-suspend to check power state and audio activity before suspending.
+  # Behavior: closing lid on AC power won't suspend, closing on battery will suspend
+  # after swayidle's 5-minute inactivity timeout (unless audio is active).
+  services.logind.settings.Login.HandleLidSwitch = "ignore";
 
   ### End battery, swap, and hibernation
 
