@@ -319,6 +319,9 @@ in
           name = "DejaVu Sans";
         };
         # Monospace font for terminals and shell UI.
+        # Note: In some cases it is necessary to run `fc-cache -f` to refresh
+        # the font cache. This should be handled by nixos-rebuild switch, but as
+        # 2026-01-21 this is not always the case.
         monospace = {
           package = pkgs.nerd-fonts.dejavu-sans-mono;
           name = "DejaVu Sans Mono";
