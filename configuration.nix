@@ -470,7 +470,14 @@ in
       programs.starship.enable = true;
       # programs.swaylock.enable = true;
       # programs.swaylock.package = pkgs.swaylock-effects;
-      programs.tmux.enable = true;
+      programs.tmux = {
+        enable = true;
+        extraConfig = ''
+          # Navigate through windows with Ctrl-PageDown and Ctrl-PageUp
+          bind-key -n C-PageDown next-window
+          bind-key -n C-PageUp previous-window
+        '';
+      };
 
       programs.vicinae = {
         enable = true;
