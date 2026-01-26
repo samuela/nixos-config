@@ -484,6 +484,9 @@ in
       programs.tmux = {
         enable = true;
         extraConfig = ''
+          # Enable mouse mode for scrolling and automatic copy mode entry
+          set -g mouse on
+
           # Navigate through windows with Ctrl-PageDown and Ctrl-PageUp
           bind-key -n C-PageDown next-window
           bind-key -n C-PageUp previous-window
