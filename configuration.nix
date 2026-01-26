@@ -374,6 +374,7 @@ in
 
         chromium
         clang # many rust libs require having a `cc`
+        comma
         elan
         impala
         jq
