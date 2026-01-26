@@ -1,6 +1,12 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
+# Instead of using `nixos-rebuild`, use `rebuild.sh`. For example, instead of
+#
+#   sudo nixos-rebuild switch
+#
+# run
+#
+#   sudo ~/dev/nixos-config/./rebuild.sh switch
+#
+# See `rebuild.sh` for more details.
 
 { config, pkgs, ... }:
 
