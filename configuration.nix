@@ -11,8 +11,8 @@
 { config, pkgs, ... }:
 
 let
-  # Tracking release-25.11 branch. Last updated 2025-01-15
-  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/82fb7dedaad83e5e279127a38ef410bcfac6d77c.tar.gz";
+  # Tracking release-25.11 branch. Last updated 2026-01-26
+  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/75ed713570ca17427119e7e204ab3590cc3bf2a5.tar.gz";
 
   # Last updated 2025-12-12
   nixos-hardware = builtins.fetchTarball "https://github.com/NixOS/nixos-hardware/archive/9154f4569b6cdfd3c595851a6ba51bfaa472d9f3.tar.gz";
