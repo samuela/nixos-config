@@ -483,6 +483,7 @@ in
       # programs.swaylock.package = pkgs.swaylock-effects;
       programs.tmux = {
         enable = true;
+        prefix = "C-a";
         extraConfig = ''
           # Enable mouse mode for scrolling and automatic copy mode entry
           set -g mouse on
