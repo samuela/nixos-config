@@ -175,7 +175,10 @@ in
     percentageLow = 15; # Warn at 15%
     percentageCritical = 5; # Critical at 5%
     percentageAction = 3; # Take action at 3%
-    criticalPowerAction = "Hibernate"; # Hibernate when battery hits 3%
+    # NOTE: This will attempt hibernate even if there's a kernel mismatch (unlike
+    # smart-suspend which falls back to plain suspend). At 3% battery, a failed
+    # hibernate resume on next boot is preferable to losing everything.
+    criticalPowerAction = "Hibernate";
   };
 
   # HibernateDelaySec: When using "suspend-then-hibernate", stay suspended for 30m before hibernating
@@ -303,9 +306,19 @@ in
           exit 0
         end
 
+        # If a nixos-rebuild changed the kernel since this boot, hibernation resume
+        # would fail (kernel version mismatch). Fall back to plain suspend in that case.
+        set booted_kernel (${pkgs.coreutils}/bin/readlink -f /run/booted-system/kernel)
+        set current_kernel (${pkgs.coreutils}/bin/readlink -f /run/current-system/kernel)
+        if test "$booted_kernel" != "$current_kernel"
+          log "kernel mismatch: booted=$booted_kernel current=$current_kernel. Using suspend."
+          ${pkgs.coreutils}/bin/sleep 5
+          exec ${pkgs.systemd}/bin/systemctl suspend
+        else
         log "suspend-then-hibernate in 5s"
-        sleep 5
+          ${pkgs.coreutils}/bin/sleep 5
         exec ${pkgs.systemd}/bin/systemctl suspend-then-hibernate
+        end
       '';
     in
     {
@@ -478,7 +491,15 @@ in
       programs.neovim.enable = true;
       # programs.obsidian.enable = true; # This will eventually work but the commit hasn't hit the release yet.
       programs.ripgrep.enable = true;
-      programs.starship.enable = true;
+      programs.starship = {
+        enable = true;
+        settings.custom.kernel_mismatch = {
+          command = "echo '⚠ kernel mismatch - hibernate disabled'";
+          when = ''test "$(${pkgs.coreutils}/bin/readlink -f /run/booted-system/kernel)" != "$(${pkgs.coreutils}/bin/readlink -f /run/current-system/kernel)"'';
+          format = "[$output]($style) ";
+          style = "bold yellow";
+        };
+      };
       # programs.swaylock.enable = true;
       # programs.swaylock.package = pkgs.swaylock-effects;
       programs.tmux = {
