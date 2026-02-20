@@ -192,6 +192,25 @@ in
   # after swayidle's 5-minute inactivity timeout (unless audio is active).
   services.logind.settings.Login.HandleLidSwitch = "ignore";
 
+  # Turn internal screen off/on when lid is closed/opened. This is separate from
+  # suspend handling (which is done by swayidle's smart-suspend based on idle time).
+  # Only affects eDP-1 (internal display), so external monitors remain on.
+  services.acpid = {
+    enable = true;
+    lidEventCommands = ''
+      export XDG_RUNTIME_DIR=/run/user/$(${pkgs.coreutils}/bin/id -u skainswo)
+      # Find niri socket dynamically (includes PID which changes on restart)
+      export NIRI_SOCKET=$(${pkgs.findutils}/bin/find $XDG_RUNTIME_DIR -maxdepth 1 -name "niri.*.sock" 2>/dev/null | head -1)
+      if [ -z "$NIRI_SOCKET" ]; then exit 0; fi
+      # Event is passed as single string like "button/lid LID0 close"
+      action=$(echo "$1" | ${pkgs.gawk}/bin/awk '{print $3}')
+      case "$action" in
+        close) ${pkgs.niri}/bin/niri msg output eDP-1 off ;;
+        open)  ${pkgs.niri}/bin/niri msg output eDP-1 on ;;
+      esac
+    '';
+  };
+
   ### End battery, swap, and hibernation
 
   nix.settings.experimental-features = [
