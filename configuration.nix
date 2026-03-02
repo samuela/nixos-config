@@ -169,14 +169,14 @@ in
   powerManagement.enable = true; # enable hibernation
 
   # Power management - prevent file system corruption from sudden battery death
-  # When battery hits 3%, the system will hibernate (save RAM to disk)
+  # When battery hits 5%, the system will hibernate (save RAM to disk)
   services.upower = {
     enable = true;
     percentageLow = 15; # Warn at 15%
     percentageCritical = 5; # Critical at 5%
-    percentageAction = 3; # Take action at 3%
+    percentageAction = 5; # Take action at 5%
     # NOTE: This will attempt hibernate even if there's a kernel mismatch (unlike
-    # smart-suspend which falls back to plain suspend). At 3% battery, a failed
+    # smart-suspend which falls back to plain suspend). At 5% battery, a failed
     # hibernate resume on next boot is preferable to losing everything.
     criticalPowerAction = "Hibernate";
   };
@@ -333,17 +333,24 @@ in
 
         log "start"
 
-        # Avoid suspending while plugged into power (any line_power device online).
+        # Avoid suspending while plugged into power. We use battery state rather
+        # than line_power devices because ACAD can go stale and report "online"
+        # after the charger is unplugged (observed 2026-03-01, drained to 3%).
+        set battery_state (${pkgs.upower}/bin/upower -i /org/freedesktop/UPower/devices/battery_BAT1 | string match -r 'state:\s+(\S+)')
+        set battery_state $battery_state[-1]
+        log "battery state: $battery_state"
         set line_powers (${pkgs.upower}/bin/upower -e | string match "*line_power*")
         log "line_power devices: $line_powers"
         for lp in $line_powers
           if test -n "$lp"
             if ${pkgs.upower}/bin/upower -i $lp | string match -q "*online: *yes*"
-              log "skip suspend: power online via $lp"
-              exit 0
+              log "line_power online: $lp"
             end
-            log "power offline via $lp"
           end
+        end
+        if test "$battery_state" != "discharging"
+          log "skip suspend: battery not discharging"
+          exit 0
         end
 
         # Avoid suspending while audio capture or playback is active (e.g., in a call).
