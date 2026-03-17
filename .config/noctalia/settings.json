@@ -31,7 +31,7 @@
     "bar": {
         "backgroundOpacity": 1,
         "capsuleOpacity": 1,
-        "density": "default",
+        "density": "compact",
         "exclusive": true,
         "floating": false,
         "marginHorizontal": 0,
@@ -171,7 +171,7 @@
         "manualSunrise": "06:30",
         "manualSunset": "18:30",
         "matugenSchemeType": "scheme-fruit-salad",
-        "predefinedScheme": "Gruvbox",
+        "predefinedScheme": "GruvboxAlt",
         "schedulingMode": "off",
         "useWallpaperColors": false
     },
@@ -486,7 +486,7 @@
         "enabled": true,
         "fillColor": "#000000",
         "fillMode": "crop",
-        "hideWallpaperFilenames": false,
+        "hideWallpaperFilenames": true,
         "monitorDirectories": [
         ],
         "overviewEnabled": false,
