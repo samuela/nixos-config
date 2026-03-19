@@ -13,4 +13,15 @@ in
   ];
 
   networking.hostName = "luminous-lemon";
+
+  # Server mode: never suspend or hibernate
+  systemd.sleep.extraConfig = ''
+    AllowSuspend=no
+    AllowHibernation=no
+    AllowSuspendThenHibernate=no
+    AllowHybridSleep=no
+  '';
+
+  # Tailscale SSH
+  services.tailscale.extraSetFlags = [ "--ssh" ];
 }
