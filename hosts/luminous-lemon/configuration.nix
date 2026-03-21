@@ -23,5 +23,7 @@ in
   '';
 
   # Tailscale SSH
+  # Enable nix-ld for running dynamically linked binaries (e.g. VS Code Remote server)
+  programs.nix-ld.enable = true;
   services.tailscale.extraSetFlags = [ "--ssh" ];
 }
