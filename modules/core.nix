@@ -400,6 +400,7 @@ in
         settings.user.email = "skainsworth@gmail.com";
         settings.user.name = "Samuel Ainsworth";
       };
+      programs.btop.enable = true;
       programs.htop.enable = true;
       programs.jujutsu = {
         enable = true;
