@@ -160,6 +160,15 @@ in
   ];
   nix.settings.builders-use-substitutes = true;
 
+  nix.settings.extra-substituters = [
+    "https://cache.nixos-cuda.org"
+    "https://ploop.cachix.org"
+  ];
+  nix.settings.extra-trusted-public-keys = [
+    "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
+    "ploop.cachix.org-1:i6+Fqarsbf5swqH09RXOEDvxy7Wm7vbiIXu4A9HCg1g="
+  ];
+
   nix.settings.experimental-features = [
     "nix-command"
     "flakes"
