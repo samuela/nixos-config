@@ -2,8 +2,8 @@
 { config, pkgs, ... }:
 
 let
-  # Last updated 2025-12-12
-  nixos-hardware = builtins.fetchTarball "https://github.com/NixOS/nixos-hardware/archive/9154f4569b6cdfd3c595851a6ba51bfaa472d9f3.tar.gz";
+  # Last updated 2026-04-05
+  nixos-hardware = builtins.fetchTarball "https://github.com/NixOS/nixos-hardware/archive/80afbd13eea0b7c4ac188de949e1711b31c2b5f0.tar.gz";
 in
 {
   imports = [
@@ -13,6 +13,9 @@ in
   ];
 
   networking.hostName = "tropical-turnip";
+
+  # Use latest kernel for amdgpu/RDNA 3 MES fixes (6.12 had recurring GPU resets)
+  boot.kernelPackages = pkgs.linuxPackages_latest;
 
   # See https://wiki.archlinux.org/title/Network_configuration/Wireless#mt7921
   boot.extraModprobeConfig = ''
