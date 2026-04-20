@@ -15,12 +15,8 @@ let
   noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" { };
   noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
 
-  # Tracking nixpkgs-unstable channel (as shown on status.nixos.org). Last updated 2026-04-06.
-  # Update by running:
-  #   curl -s 'https://status.nixos.org/prometheus/api/v1/query?query=channel_revision' \
-  #     | jq -r '.data.result[] | select(.metric.channel=="nixpkgs-unstable" and .metric.current=="1") | .metric.revision'
-  # and substituting the result into this tarball URL.
-  unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/5e11f7acce6c3469bef9df154d78534fa7ae8b6c.tar.gz";
+  # Tracking nixpkgs master branch. Last updated 2026-04-17.
+  unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/3e73265ba7d6f615477628fff4607c27e65020b1.tar.gz";
 
   unstable-nixpkgs-patched = (import unstable-nixpkgs-src { }).applyPatches {
     name = "nixpkgs-patched";
