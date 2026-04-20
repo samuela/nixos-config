@@ -15,8 +15,8 @@ let
   noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" { };
   noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
 
-  # Tracking nixpkgs master branch. Last updated 2026-04-17.
-  unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/3e73265ba7d6f615477628fff4607c27e65020b1.tar.gz";
+  # Tracking nixpkgs master branch. Last updated 2026-04-20.
+  unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/fd65fa0e62d3098ea18e836a077351995d5f75fe.tar.gz";
 
   unstable-nixpkgs-patched = (import unstable-nixpkgs-src { }).applyPatches {
     name = "nixpkgs-patched";
