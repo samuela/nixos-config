@@ -31,6 +31,8 @@ let
   };
 in
 {
+  _module.args.unstablePkgs = unstable-pkgs;
+
   # See https://github.com/NixOS/nixpkgs/pull/472183#issuecomment-3700677971
   systemd.package =
     if pkgs.systemd.version == "258.2" then
