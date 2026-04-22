@@ -151,7 +151,10 @@ in
       hostName = "eu.nixbuild.net";
       system = "x86_64-linux";
       maxJobs = 100;
-      supportedFeatures = [ "benchmark" "big-parallel" ];
+      supportedFeatures = [
+        "benchmark"
+        "big-parallel"
+      ];
     }
   ];
   nix.settings.builders-use-substitutes = true;
@@ -342,7 +345,6 @@ in
       #   rustfmt
       # ];
       ;
-
 
       xdg.desktopEntries.gurk = {
         name = "Gurk";
