@@ -1,5 +1,5 @@
 # Configuration for luminous-lemon (ThinkPad L13 Gen 1)
-{ config, pkgs, ... }:
+{ ... }:
 
 let
   # Last updated 2025-12-12
@@ -12,6 +12,7 @@ in
     ../../modules/core.nix
     ../../modules/openclaw.nix
     ../../modules/opencode.nix
+    ../../modules/oom-mitigations.nix
   ];
 
   networking.hostName = "luminous-lemon";
