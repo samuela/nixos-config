@@ -18,4 +18,5 @@ ln -s /home/skainswo/dev/nixos-config/.config/vicinae/vicinae.json ~/.config/vic
 
 ## Deploy
 
-- Rebuild from this repo: `./rebuild.sh switch` (uses `-I nixos-config` to point at `configuration.nix` here).
+- Rebuild from this repo: `./rebuild.sh switch` (uses `-I nixos-config` for the selected host config and `-I nixpkgs` from `nix/pinned-nixpkgs.nix`, so it does not depend on the root `nix-channel`).
+- Update the top-level `nixpkgs` pin by changing `rev` and `sha256` in `nix/pinned-nixpkgs.nix`. To compute the new hash for a revision, run `nix-prefetch-url --unpack https://github.com/NixOS/nixpkgs/archive/<rev>.tar.gz` and copy the resulting hash into `sha256`.

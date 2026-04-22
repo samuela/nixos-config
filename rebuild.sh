@@ -2,6 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+nixpkgs_pin_expr="$repo_root/nix/pinned-nixpkgs-path.nix"
 
 # Use NIXOS_HOST env var if set, otherwise detect from hostname
 hostname="${NIXOS_HOST:-$(hostname)}"
@@ -17,4 +18,11 @@ if [[ ! -f "$host_config" ]]; then
   exit 1
 fi
 
-nixos-rebuild -I nixos-config="$host_config" "$@"
+# Resolve the pinned nixpkgs tarball to a store path so rebuilds do not depend
+# on the ambient root channel / default NIX_PATH.
+nixpkgs_path="$(nix eval --raw --file "$nixpkgs_pin_expr")"
+
+nixos-rebuild \
+  -I nixpkgs="$nixpkgs_path" \
+  -I nixos-config="$host_config" \
+  "$@"
