@@ -317,7 +317,7 @@ in
         kdePackages.okular
         pkg-config # many rust libs require having `pkg-config`
         rustup
-        signal-desktop
+        unstable-pkgs.signal-desktop
         spotify # doesn't seem to work?
         swaybg # used in spawn-at-startup by niri config
         swayosd # used in keyboard bindings in niri config. for some reason services.swayosd doesn't add it to PATH
