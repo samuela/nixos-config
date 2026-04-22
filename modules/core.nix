@@ -31,6 +31,7 @@ let
   };
 in
 {
+  _module.args.unstableNixpkgsSrc = unstable-nixpkgs-patched;
   _module.args.unstablePkgs = unstable-pkgs;
 
   # See https://github.com/NixOS/nixpkgs/pull/472183#issuecomment-3700677971

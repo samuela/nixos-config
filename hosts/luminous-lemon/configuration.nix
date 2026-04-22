@@ -10,6 +10,7 @@ in
     "${nixos-hardware}/lenovo/thinkpad/l13"
     ./hardware-configuration.nix
     ../../modules/core.nix
+    ../../modules/openclaw.nix
     ../../modules/opencode.nix
   ];
 
