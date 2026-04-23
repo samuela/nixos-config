@@ -1,5 +1,5 @@
 # Configuration for luminous-lemon (ThinkPad L13 Gen 1)
-{ ... }:
+{ config, ... }:
 
 let
   # Last updated 2025-12-12
@@ -32,10 +32,10 @@ in
   # firmware's final emergency poweroff.
   #
   # thermald: asks the kernel/firmware to cool the machine earlier as temps rise.
-  # tlp: keeps CPU policy less aggressive by disabling turbo and capping max perf.
+  # tlp: sets CPU boost/performance policy and caps max perf where needed.
   # throttled: enforces Intel package power and temperature targets directly.
   #
-  # This machine lives on wall power, so keep one conservative thermal policy on
+  # This machine lives on wall power, so keep one explicit thermal policy on
   # both AC and battery and do not rely on power-source detection for safety.
   services.thermald = {
     enable = true;
@@ -45,16 +45,11 @@ in
   services.throttled.enable = true;
 
   services.tlp.settings = {
-    CPU_BOOST_ON_AC = 0;
-    CPU_BOOST_ON_BAT = 0;
-    CPU_HWP_DYN_BOOST_ON_AC = 0;
-    CPU_HWP_DYN_BOOST_ON_BAT = 0;
-    CPU_MAX_PERF_ON_AC = 90;
-    CPU_MAX_PERF_ON_BAT = 90;
-    CPU_ENERGY_PERF_POLICY_ON_AC = "balance_power";
-    CPU_ENERGY_PERF_POLICY_ON_BAT = "balance_power";
-    PLATFORM_PROFILE_ON_AC = "balanced";
-    PLATFORM_PROFILE_ON_BAT = "balanced";
+    CPU_BOOST_ON_AC = 1;
+    CPU_HWP_DYN_BOOST_ON_AC = 1;
+    CPU_MAX_PERF_ON_AC = 100;
+    CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
+    PLATFORM_PROFILE_ON_AC = "performance";
   };
 
   services.throttled.extraConfig = ''
@@ -64,22 +59,14 @@ in
     Autoreload: True
 
     [BATTERY]
-    Update_Rate_s: 5
-    PL1_Tdp_W: 20
-    PL1_Duration_s: 28
-    PL2_Tdp_W: 28
-    PL2_Duration_S: 0.002
-    Trip_Temp_C: 80
+    Update_Rate_s: 30
+    Trip_Temp_C: 85
     cTDP: 0
     Disable_BDPROCHOT: False
 
     [AC]
     Update_Rate_s: 5
-    PL1_Tdp_W: 20
-    PL1_Duration_s: 28
-    PL2_Tdp_W: 28
-    PL2_Duration_S: 0.002
-    Trip_Temp_C: 80
+    Trip_Temp_C: 85
     cTDP: 0
     Disable_BDPROCHOT: False
 
@@ -97,6 +84,11 @@ in
     UNCORE: 0
     ANALOGIO: 0
   '';
+
+  # throttled's built-in Autoreload checks file mtime, but Nix store-backed
+  # config files have a normalized timestamp, so runtime reload never notices a
+  # rebuild. Force a service restart when the generated config changes.
+  systemd.services.throttled.restartTriggers = [ config.environment.etc."throttled.conf".source ];
 
   # Tailscale SSH
   # Enable nix-ld for running dynamically linked binaries (e.g. VS Code Remote server)
