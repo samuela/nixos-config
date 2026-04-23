@@ -226,7 +226,7 @@ in
 
   home-manager.useGlobalPkgs = true;
   home-manager.users.skainswo =
-    { pkgs, ... }:
+    { pkgs, config, ... }:
     let
       shellAliases = {
         e = "code";
@@ -313,6 +313,7 @@ in
         jq
         nautilus # See https://github.com/YaLTeR/niri/issues/1863
         nixfmt-rfc-style # used by the Nix IDE VSCode extension
+        nodejs # Vicinae local extensions require a Node runtime.
         obsidian
         kdePackages.okular
         pkg-config # many rust libs require having `pkg-config`
@@ -435,9 +436,30 @@ in
 
       programs.vicinae = {
         enable = true;
+        # Override the release-channel package because it lags upstream and
+        # misses newer Vicinae features like script commands.
+        package = unstable-pkgs.vicinae;
         systemd.enable = true;
       };
       stylix.targets.vicinae.enable = false;
+      # Install a small local extension instead of relying on fallback
+      # shortcuts, which always see the full root query and compete with other
+      # fallback commands like Google search.
+      home.file.".local/share/vicinae/extensions/ai-prefixes/package.json".source =
+        ../.config/vicinae/extensions/ai-prefixes/package.json;
+      home.file.".local/share/vicinae/extensions/ai-prefixes/ask.js".source =
+        ../.config/vicinae/extensions/ai-prefixes/ask.js;
+      home.file.".local/share/vicinae/extensions/ai-prefixes/chatgpt.js".source =
+        ../.config/vicinae/extensions/ai-prefixes/chatgpt.js;
+      home.file.".local/share/vicinae/extensions/ai-prefixes/gemini.js".source =
+        ../.config/vicinae/extensions/ai-prefixes/gemini.js;
+      # Keep the `cl` alias declarative without taking ownership of the main
+      # GUI-managed Vicinae settings file.
+      home.file.".config/vicinae/overrides/ai-prefixes.jsonc".source =
+        ../.config/vicinae/overrides/ai-prefixes.jsonc;
+      systemd.user.services.vicinae.Service.Environment = [
+        "VICINAE_OVERRIDES=${config.home.homeDirectory}/.config/vicinae/overrides/ai-prefixes.jsonc"
+      ];
 
       programs.wezterm.enable = true;
       programs.yazi.enable = true;

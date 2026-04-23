@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/vicinaehq/vicinae/refs/heads/main/extra/schemas/extension.json",
+  "name": "ai-prefixes",
+  "title": "AI Prefixes",
+  "description": "Open Claude, ChatGPT, or Gemini from short prefixes inside Vicinae.",
+  "author": "samuela",
+  "type": "commonjs",
+  "categories": [
+    "Productivity"
+  ],
+  "commands": [
+    {
+      "name": "ask",
+      "title": "Claude Web",
+      "description": "Open Claude in the browser with the current prompt.",
+      "mode": "view"
+    },
+    {
+      "name": "chatgpt",
+      "title": "ChatGPT",
+      "description": "Open ChatGPT in the browser with the current prompt.",
+      "mode": "view"
+    },
+    {
+      "name": "gemini",
+      "title": "Gemini",
+      "description": "Open Gemini in the browser with the current prompt.",
+      "mode": "view"
+    }
+  ]
+}

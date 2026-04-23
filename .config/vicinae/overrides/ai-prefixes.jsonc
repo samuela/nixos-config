@@ -1,0 +1,18 @@
+{
+  // Alias the command so typing `cl` then space jumps into the command view.
+  "providers": {
+    "@samuela/ai-prefixes": {
+      "entrypoints": {
+        "ask": {
+          "alias": "cl"
+        },
+        "chatgpt": {
+          "alias": "ch"
+        },
+        "gemini": {
+          "alias": "ge"
+        }
+      }
+    }
+  }
+}
