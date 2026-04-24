@@ -17,6 +17,27 @@ in
 
   networking.hostName = "luminous-lemon";
 
+  # Follow upstream throttled master until a release after v0.11 lands in nixpkgs.
+  # We need a6a95bd, which makes temperature-only configs work by skipping the
+  # MSR_PKG_POWER_LIMIT write when PL1/PL2 are omitted. v0.11 logs that package
+  # power limits are disabled, then crashes with KeyError: 'MSR_PKG_POWER_LIMIT'.
+  nixpkgs.overlays = [
+    (_final: prev: {
+      throttled =
+        assert prev.throttled.version == "0.11"
+          || throw "nixpkgs throttled is ${prev.throttled.version}; revisit the local upstream-master overlay";
+        prev.throttled.overrideAttrs (_old: {
+          version = "unstable-2026-04-20";
+          src = prev.fetchFromGitHub {
+            owner = "erpalma";
+            repo = "throttled";
+            rev = "9813d814ae9540a8d3d166d22bf8afe458d323e6";
+            hash = "sha256-HCC2RlMpsJMRDnqThOTQsEihuuMU9VWtdD4Yggl/jo4=";
+          };
+        });
+    })
+  ];
+
   # Server mode: never suspend or hibernate
   systemd.sleep.extraConfig = ''
     AllowSuspend=no
