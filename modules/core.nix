@@ -22,7 +22,18 @@ let
     name = "nixpkgs-patched";
     src = unstable-nixpkgs-src;
     patches = [
-      # not currently in use but this is where we can patch nixpkgs as needed
+      # This pin still has codex 0.121.0, so apply the upstream 0.122.0 update
+      # first, then PR 512941's 0.124.0 bump.
+      (pkgs.fetchpatch2 {
+        name = "codex-0.122.0.patch";
+        url = "https://github.com/NixOS/nixpkgs/commit/eb1fe5f888cab686fc939eae23dd2e3e921f3931.patch?full_index=1";
+        hash = "sha256-7l2CNbFqkhsFhEMSBDgUjjsc6h5/7/NSAjRWFeGKWTc=";
+      })
+      (pkgs.fetchpatch2 {
+        name = "codex-0.124.0.patch";
+        url = "https://github.com/NixOS/nixpkgs/commit/db7ba832266a2067a39b2546ad6dd33960937c8c.patch?full_index=1";
+        hash = "sha256-QjerJUt9y382o4GFgf4nurpHi0tBtbNRag4B2VFk6y8=";
+      })
     ];
   };
 
