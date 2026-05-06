@@ -58,7 +58,7 @@ input {
 
     mouse {
         // off
-        // natural-scroll
+        natural-scroll
         // accel-speed 0.2
         // accel-profile "flat"
         // scroll-method "no-scroll"
@@ -66,7 +66,7 @@ input {
 
     trackpoint {
         // off
-        // natural-scroll
+        natural-scroll
         // accel-speed 0.2
         // accel-profile "flat"
         // scroll-method "on-button-down"
@@ -88,6 +88,13 @@ input {
 // Find more information on the wiki:
 // https://github.com/YaLTeR/niri/wiki/Configuration:-Outputs
 // Remember to uncomment the node by removing "/-"!
+output "HDMI-A-1" {
+    mode "4096x2160@24"
+    scale 2
+    transform "normal"
+    position x=0 y=0
+}
+
 // Big external monitor - positioned at the top
 output "DP-3" {
     mode "3840x2160@60"
