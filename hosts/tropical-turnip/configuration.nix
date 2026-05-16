@@ -4,6 +4,41 @@
 let
   # Last updated 2026-04-05
   nixos-hardware = builtins.fetchTarball "https://github.com/NixOS/nixos-hardware/archive/80afbd13eea0b7c4ac188de949e1711b31c2b5f0.tar.gz";
+
+  writeLean =
+    nameOrPath:
+    {
+      lean ? pkgs.lean4,
+      strip ? true,
+      makeWrapperArgs ? [ ],
+    }:
+    content:
+    let
+      exeName = builtins.baseNameOf nameOrPath;
+    in
+    pkgs.writers.makeBinWriter {
+      inherit strip makeWrapperArgs;
+      compileScript = ''
+        export HOME="$PWD"
+        export XDG_CACHE_HOME="$PWD/.cache"
+        export CC="${pkgs.stdenv.cc}/bin/cc"
+        export AR="${pkgs.binutils}/bin/ar"
+
+        cp "$contentPath" Main.lean
+        cat > lakefile.lean <<'EOF'
+        import Lake
+        open Lake DSL
+
+        package generatedLeanBin
+
+        lean_exe «${exeName}» where
+          root := `Main
+        EOF
+
+        ${pkgs.lib.getExe' lean "lake"} build ${pkgs.lib.escapeShellArg exeName}
+        cp ".lake/build/bin/${exeName}" "$out"
+      '';
+    } nameOrPath content;
 in
 {
   imports = [
@@ -88,59 +123,19 @@ in
   home-manager.users.skainswo =
     { pkgs, ... }:
     let
-      smart-suspend = pkgs.writeScript "smart-suspend" ''
-        #!${pkgs.fish}/bin/fish
-
-        function log
-          printf '%s\n' $argv >&2
-        end
-
-        log "start"
-
-        # Avoid suspending while plugged into power. We use battery state rather
-        # than line_power devices because ACAD can go stale and report "online"
-        # after the charger is unplugged (observed 2026-03-01, drained to 3%).
-        set battery_state (${pkgs.upower}/bin/upower -i /org/freedesktop/UPower/devices/battery_BAT1 | string match -r 'state:\s+(\S+)')
-        set battery_state $battery_state[-1]
-        log "battery state: $battery_state"
-        set line_powers (${pkgs.upower}/bin/upower -e | string match "*line_power*")
-        log "line_power devices: $line_powers"
-        for lp in $line_powers
-          if test -n "$lp"
-            if ${pkgs.upower}/bin/upower -i $lp | string match -q "*online: *yes*"
-              log "line_power online: $lp"
-            end
-          end
-        end
-        if test "$battery_state" != "discharging"
-          log "skip suspend: battery not discharging"
-          exit 0
-        end
-
-        # Avoid suspending while audio capture or playback is active (e.g., in a call).
-        if ${pkgs.pulseaudio}/bin/pactl list sinks | string match -q "*State: RUNNING*"
-          log "skip suspend: audio sink running"
-          exit 0
-        end
-        if ${pkgs.pulseaudio}/bin/pactl list sources | string match -q "*State: RUNNING*"
-          log "skip suspend: audio source running"
-          exit 0
-        end
-
-        # If a nixos-rebuild changed the kernel since this boot, hibernation resume
-        # would fail (kernel version mismatch). Fall back to plain suspend in that case.
-        set booted_kernel (${pkgs.coreutils}/bin/readlink -f /run/booted-system/kernel)
-        set current_kernel (${pkgs.coreutils}/bin/readlink -f /run/current-system/kernel)
-        if test "$booted_kernel" != "$current_kernel"
-          log "kernel mismatch: booted=$booted_kernel current=$current_kernel. Using suspend."
-          ${pkgs.coreutils}/bin/sleep 5
-          exec ${pkgs.systemd}/bin/systemctl suspend
-        else
-        log "suspend-then-hibernate in 5s"
-          ${pkgs.coreutils}/bin/sleep 5
-        exec ${pkgs.systemd}/bin/systemctl suspend-then-hibernate
-        end
-      '';
+      smart-suspend = writeLean "smart-suspend" {
+        makeWrapperArgs = [
+          "--prefix"
+          "PATH"
+          ":"
+          (pkgs.lib.makeBinPath [
+            pkgs.coreutils
+            pkgs.procps
+            pkgs.pulseaudio
+            pkgs.systemd
+          ])
+        ];
+      } ./smart-suspend.lean;
     in
     {
       # Link smart-suspend for manual debugging. Note that this is not in PATH.
@@ -156,7 +151,10 @@ in
 
           {
             timeout = 5 * 60;
-            command = "${smart-suspend}";
+            # Stay armed while the session remains idle so unplugging AC after
+            # the initial timeout still suspends an already-idle session.
+            command = "${smart-suspend} arm";
+            resumeCommand = "${smart-suspend} disarm";
           }
         ];
       };
