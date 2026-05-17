@@ -15,27 +15,13 @@ let
   noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" { };
   noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
 
-  # Tracking nixpkgs master branch. Last updated 2026-04-20.
-  unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/fd65fa0e62d3098ea18e836a077351995d5f75fe.tar.gz";
-
-  unstable-nixpkgs-patched = (import unstable-nixpkgs-src { }).applyPatches {
-    name = "nixpkgs-patched";
-    src = unstable-nixpkgs-src;
-    patches = [
-      # This pin still has codex 0.121.0, so apply the upstream 0.122.0 update
-      # first, then PR 512941's 0.124.0 bump.
-      (pkgs.fetchpatch2 {
-        name = "codex-0.122.0.patch";
-        url = "https://github.com/NixOS/nixpkgs/commit/eb1fe5f888cab686fc939eae23dd2e3e921f3931.patch?full_index=1";
-        hash = "sha256-7l2CNbFqkhsFhEMSBDgUjjsc6h5/7/NSAjRWFeGKWTc=";
-      })
-      (pkgs.fetchpatch2 {
-        name = "codex-0.124.0.patch";
-        url = "https://github.com/NixOS/nixpkgs/commit/db7ba832266a2067a39b2546ad6dd33960937c8c.patch?full_index=1";
-        hash = "sha256-QjerJUt9y382o4GFgf4nurpHi0tBtbNRag4B2VFk6y8=";
-      })
-    ];
+  # Tracking nixpkgs master branch. Last updated 2026-05-17.
+  unstable-nixpkgs-src = builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/fb524b81d973c957fa9b8c7cfacd953aec6c210a.tar.gz";
+    sha256 = "06jk6zkhsxxik369wcyzz10m58iv6iawjlchckqn82dq638sqb23";
   };
+
+  unstable-nixpkgs-patched = unstable-nixpkgs-src;
 
   unstable-pkgs = import unstable-nixpkgs-patched {
     config.allowUnfree = true;
