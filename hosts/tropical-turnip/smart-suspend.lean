@@ -10,11 +10,14 @@ def containsText (s needle : String) : Bool :=
   | _ :: _ :: _ => true
   | _ => false
 
-def trimLower (s : String) : String :=
-  s.trim.map Char.toLower
-
 def run (cmd : String) (args : Array String) : IO IO.Process.Output :=
   IO.Process.output { cmd, args }
+
+def readTrimLower? (path : FilePath) : IO (Option String) := do
+  try
+    return some ((← IO.FS.readFile path).trim.map Char.toLower)
+  catch _ =>
+    return none
 
 def stateDir : IO FilePath := do
   let some dir ← IO.getEnv "XDG_RUNTIME_DIR" | panic! "XDG_RUNTIME_DIR is not set"
@@ -27,10 +30,22 @@ def hasRunningStream (kind : String) : IO Bool := do
   let out ← run "pactl" #["list", kind]
   return containsText out.stdout "State: RUNNING"
 
+def isOnlinePowerSupply (entry : IO.FS.DirEntry) : IO Bool := do
+  let onlinePath := entry.path / "online"
+  return (← readTrimLower? onlinePath) == some "1"
+
+def onlinePowerSupplies : IO (List String) := do
+  let entries := (← (FilePath.mk "/sys/class/power_supply").readDir).toList
+  let online ← entries.filterM isOnlinePowerSupply
+  return online.map (·.fileName)
+
 def blocker? : IO (Option String) := do
-  let battery := trimLower (← IO.FS.readFile "/sys/class/power_supply/BAT1/status")
-  if battery != "discharging" then
-    return some s!"battery state: {battery}"
+  let onlineSupplies ← onlinePowerSupplies
+  if !onlineSupplies.isEmpty then
+    return some s!"external power online: {String.intercalate ", " onlineSupplies}"
+  let battery ← readTrimLower? "/sys/class/power_supply/BAT1/status"
+  if battery != some "discharging" then
+    return some s!"battery state: {battery.getD "unknown"}"
   else if ← hasRunningStream "sinks" then
     return some "audio sink running"
   else if ← hasRunningStream "sources" then
