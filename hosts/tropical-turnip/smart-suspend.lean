@@ -15,7 +15,7 @@ def run (cmd : String) (args : Array String) : IO IO.Process.Output :=
 
 def readTrimLower? (path : FilePath) : IO (Option String) := do
   try
-    return some ((← IO.FS.readFile path).trim.map Char.toLower)
+    return some ((← IO.FS.readFile path).toSlice.trimAscii.copy.map Char.toLower)
   catch _ =>
     return none
 
@@ -70,7 +70,7 @@ def suspendNow : IO UInt32 := do
   if out.exitCode == 0 then
     return 0
 
-  let stderr := out.stderr.trim
+  let stderr := out.stderr.toSlice.trimAscii.copy
   let msg :=
     if stderr.isEmpty then
       s!"systemctl {action} failed with exit code {out.exitCode}"
@@ -81,12 +81,12 @@ def suspendNow : IO UInt32 := do
 def readPid? : IO (Option String) := do
   let path ← pidFile
   if ← path.pathExists then
-    return some (← IO.FS.readFile path).trim
+    return some (← IO.FS.readFile path).toSlice.trimAscii.copy
   else
     return none
 
 def pidAlive (pid : String) : IO Bool := do
-  let pid := pid.trim
+  let pid := pid.toSlice.trimAscii.copy
   if pid.isEmpty then
     return false
   else
