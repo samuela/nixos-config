@@ -250,6 +250,10 @@ in
       ];
 
       stylix.enable = true;
+      # `home-manager.useGlobalPkgs = true` causes hm-level `nixpkgs.overlays`
+      # to be ignored anyway, so stylix's overlay-based package patching is a
+      # no-op. Disable it explicitly to silence the hm warning.
+      stylix.overlays.enable = false;
       stylix.image = ../Wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg;
       stylix.polarity = "dark";
       stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
@@ -314,7 +318,7 @@ in
         impala
         jq
         nautilus # See https://github.com/YaLTeR/niri/issues/1863
-        nixfmt-rfc-style # used by the Nix IDE VSCode extension
+        nixfmt # used by the Nix IDE VSCode extension
         nodejs # Vicinae local extensions require a Node runtime.
         obsidian
         kdePackages.okular
@@ -372,6 +376,9 @@ in
       programs.eza.enable = true;
       programs.eza.enableZshIntegration = true;
       programs.firefox.enable = true;
+      # Keep legacy path; migrating would require moving ~/.mozilla/firefox.
+      programs.firefox.configPath = ".mozilla/firefox";
+      stylix.targets.firefox.profileNames = [ "default" ];
       programs.fish = {
         enable = true;
         inherit shellAliases;
@@ -410,6 +417,8 @@ in
         };
       };
       programs.neovim.enable = true;
+      programs.neovim.withRuby = false;
+      programs.neovim.withPython3 = false;
       # programs.obsidian.enable = true; # This will eventually work but the commit hasn't hit the release yet.
       programs.ripgrep.enable = true;
       programs.starship = {
@@ -465,6 +474,7 @@ in
 
       programs.wezterm.enable = true;
       programs.yazi.enable = true;
+      programs.yazi.shellWrapperName = "y";
       programs.zoxide.enable = true;
       programs.zsh = {
         enable = true;
