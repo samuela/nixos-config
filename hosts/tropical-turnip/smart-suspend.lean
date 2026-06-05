@@ -106,7 +106,17 @@ partial def waitLoop : IO UInt32 := do
       IO.sleep 60000
       waitLoop
   | none =>
-      suspendNow
+      -- Grace period: re-check after 60s before actually suspending. This
+      -- avoids a race where a blocker disappears (e.g. AC unplugged on
+      -- undock) immediately before the user generates input — swayidle's
+      -- resume command needs a moment to fire and kill us.
+      log "no blocker; re-checking in 60s before suspending"
+      IO.sleep 60000
+      match ← blocker? with
+      | some reason =>
+          log s!"blocker returned during grace: {reason}"
+          waitLoop
+      | none => suspendNow
 
 def runArm : IO UInt32 := do
   IO.FS.createDirAll (← stateDir)
@@ -125,8 +135,12 @@ def runArm : IO UInt32 := do
     removePidFile
 
 def runDisarm : IO UInt32 := do
-  if let some pid ← readPid? then
-    discard <| run "kill" #["-TERM", pid]
+  match ← readPid? with
+  | some pid =>
+      log s!"disarming pid {pid}"
+      discard <| run "kill" #["-TERM", pid]
+  | none =>
+      log "disarm called but not armed"
   removePidFile
   return 0
 
