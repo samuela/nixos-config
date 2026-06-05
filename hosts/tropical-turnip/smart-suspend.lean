@@ -105,18 +105,7 @@ partial def waitLoop : IO UInt32 := do
       log s!"waiting: {reason}"
       IO.sleep 60000
       waitLoop
-  | none =>
-      -- Grace period: re-check after 60s before actually suspending. This
-      -- avoids a race where a blocker disappears (e.g. AC unplugged on
-      -- undock) immediately before the user generates input — swayidle's
-      -- resume command needs a moment to fire and kill us.
-      log "no blocker; re-checking in 60s before suspending"
-      IO.sleep 60000
-      match ← blocker? with
-      | some reason =>
-          log s!"blocker returned during grace: {reason}"
-          waitLoop
-      | none => suspendNow
+  | none => suspendNow
 
 def runArm : IO UInt32 := do
   IO.FS.createDirAll (← stateDir)

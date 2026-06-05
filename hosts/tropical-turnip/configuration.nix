@@ -141,6 +141,12 @@ in
 
       services.swayidle = {
         enable = true;
+        # Drop the default "-w" so swayidle doesn't block resume callbacks
+        # while a timeout command is still running. "smart-suspend arm" loops
+        # until it suspends, so with -w swayidle could never deliver disarm
+        # mid-wait — the user would stay armed even while actively using the
+        # machine.
+        extraArgs = [ ];
         timeouts = [
           {
             timeout = 3 * 60;
