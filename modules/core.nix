@@ -318,7 +318,10 @@ in
         unstable-pkgs.signal-desktop
         spotify # doesn't seem to work?
         swaybg # used in spawn-at-startup by niri config
-        swayosd # used in keyboard bindings in niri config. for some reason services.swayosd doesn't add it to PATH
+        # 0.3.1 from unstable fixes a panic at osd_window.rs:70 ("multiply
+        # with overflow") triggered by monitor geometry changes on lid open
+        # or undock. nixos-25.11 still ships 0.2.1.
+        unstable-pkgs.swayosd # used in keyboard bindings in niri config. for some reason services.swayosd doesn't add it to PATH
         walker # see services.walker below
         xwayland-satellite # For steam and other X11 applications. See https://discourse.nixos.org/t/how-to-do-xwayland-on-nixos/57825/11?u=samuela.
       ]
@@ -487,6 +490,7 @@ in
       };
 
       services.swayosd.enable = true;
+      services.swayosd.package = unstable-pkgs.swayosd;
       # Available on master but not yet on release-25.05 branch as of 2025-08-23.
       # services.walker.enable = true;
 
