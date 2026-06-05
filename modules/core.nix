@@ -3,11 +3,11 @@
 { config, pkgs, ... }:
 
 let
-  # Tracking release-25.11 branch. Last updated 2026-01-26
-  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/75ed713570ca17427119e7e204ab3590cc3bf2a5.tar.gz";
+  # Tracking release-26.05 branch. Last updated 2026-06-05
+  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/e28654b71096e08c019d4861ca26acb646f583d8.tar.gz";
 
-  # Tracking release-25.11 branch. Last updated 2025-01-15
-  stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/362306faaa7459bebf8eabf135879785f3da9bd2.tar.gz";
+  # Tracking release-26.05 branch. Last updated 2026-06-05
+  stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/aacc65706d523528aed81f55c2c780aaeb541d55.tar.gz";
 
   # Tracking https://github.com/noctalia-dev/noctalia-shell/commits/main. Last updated 2025-01-12
   noctaliaSrc = builtins.fetchTarball "https://github.com/noctalia-dev/noctalia-shell/archive/2b55ae2c348fcad50089bc334c4a8155b2941d3b.tar.gz";
@@ -72,7 +72,6 @@ in
 
   # Enable the GNOME display manager
   services.displayManager.gdm.enable = true;
-  services.displayManager.gdm.wayland = true;
   services.gnome.evolution-data-server.enable = true;
 
   # A keyring is used by VSCode
@@ -193,8 +192,10 @@ in
   services.tailscale.enable = true;
   services.resolved = {
     enable = true; # https://github.com/tailscale/tailscale/issues/4254
-    fallbackDns = [ ];
-    domains = [ "~." ];
+    settings.Resolve = {
+      FallbackDNS = [ ];
+      Domains = [ "~." ];
+    };
   };
   # NETGEAR R6700v2 times out on AAAA lookups, so we manually override DNS config.
   networking.nameservers = [
@@ -318,10 +319,7 @@ in
         unstable-pkgs.signal-desktop
         spotify # doesn't seem to work?
         swaybg # used in spawn-at-startup by niri config
-        # 0.3.1 from unstable fixes a panic at osd_window.rs:70 ("multiply
-        # with overflow") triggered by monitor geometry changes on lid open
-        # or undock. nixos-25.11 still ships 0.2.1.
-        unstable-pkgs.swayosd # used in keyboard bindings in niri config. for some reason services.swayosd doesn't add it to PATH
+        swayosd # used in keyboard bindings in niri config. for some reason services.swayosd doesn't add it to PATH
         walker # see services.walker below
         xwayland-satellite # For steam and other X11 applications. See https://discourse.nixos.org/t/how-to-do-xwayland-on-nixos/57825/11?u=samuela.
       ]
@@ -490,7 +488,6 @@ in
       };
 
       services.swayosd.enable = true;
-      services.swayosd.package = unstable-pkgs.swayosd;
       # Available on master but not yet on release-25.05 branch as of 2025-08-23.
       # services.walker.enable = true;
 

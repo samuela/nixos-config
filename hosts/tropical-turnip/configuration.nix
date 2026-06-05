@@ -90,9 +90,7 @@ in
   };
 
   # HibernateDelaySec: When using "suspend-then-hibernate", stay suspended for 30m before hibernating
-  systemd.sleep.extraConfig = ''
-    HibernateDelaySec=30m
-  '';
+  systemd.sleep.settings.Sleep.HibernateDelaySec = "30m";
 
   # Ignore lid switch events and let swayidle's smart-suspend handle suspension.
   # This allows smart-suspend to check power state and audio activity before suspending.
