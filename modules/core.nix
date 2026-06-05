@@ -47,6 +47,10 @@ in
   security.polkit.enable = true;
 
   programs.niri.enable = true;
+  # GDM defaults to "gnome-session" when no session is selected and the
+  # user's AccountsService record doesn't pin one; on this host that just
+  # produces a login loop (no GNOME installed). Pin niri explicitly.
+  services.displayManager.defaultSession = "niri";
   services.flatpak.enable = true;
 
   # Enable networking
