@@ -39,12 +39,12 @@ in
   ];
 
   # Server mode: never suspend or hibernate
-  systemd.sleep.extraConfig = ''
-    AllowSuspend=no
-    AllowHibernation=no
-    AllowSuspendThenHibernate=no
-    AllowHybridSleep=no
-  '';
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = "no";
+    AllowHibernation = "no";
+    AllowSuspendThenHibernate = "no";
+    AllowHybridSleep = "no";
+  };
 
   # Postmortem, 2026-04-23:
   # An 8-way Rust build pinned all cores long enough to hit the firmware thermal
