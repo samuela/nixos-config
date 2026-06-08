@@ -13,9 +13,12 @@ in
     ../../modules/openclaw.nix
     ../../modules/opencode.nix
     ../../modules/oom-mitigations.nix
+    ../../modules/restic-backup.nix
   ];
 
   networking.hostName = "luminous-lemon";
+
+  services.resticBackup.enable = true;
 
   # Follow upstream throttled master until a release after v0.11 lands in nixpkgs.
   # We need a6a95bd, which makes temperature-only configs work by skipping the
