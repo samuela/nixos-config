@@ -74,7 +74,13 @@ in
   #   2. Use the first physical_offset value (currently 8665088)
   #   3. Update resume_offset below and rebuild
   boot.resumeDevice = "/dev/disk/by-uuid/9af0faf1-75d0-43c3-ba88-b697ddf73c4d";
-  boot.kernelParams = [ "resume_offset=8665088" ];
+  boot.kernelParams = [
+    "resume_offset=8665088"
+    # Hibernation debugging: log each driver's suspend/resume callback so the
+    # last device touched before a hang is identifiable in dmesg.
+    "pm_debug_messages"
+    "no_console_suspend"
+  ];
 
   # Power management - prevent file system corruption from sudden battery death
   # When battery hits 5%, the system will hibernate (save RAM to disk)
