@@ -224,6 +224,9 @@ in
   networking.firewall.allowedTCPPorts = [ 8009 ];
 
   home-manager.useGlobalPkgs = true;
+  # Let HM back up (rather than abort on) pre-existing files it wants to manage,
+  # e.g. an existing ~/.mozilla/firefox/profiles.ini -> profiles.ini.hm-bak.
+  home-manager.backupFileExtension = "hm-bak";
   home-manager.users.skainswo =
     { pkgs, config, ... }:
     let
@@ -372,9 +375,19 @@ in
       programs.bat.enable = true;
       programs.eza.enable = true;
       programs.eza.enableZshIntegration = true;
-      programs.firefox.enable = true;
-      # Keep legacy path; migrating would require moving ~/.mozilla/firefox.
-      programs.firefox.configPath = ".mozilla/firefox";
+      programs.firefox = {
+        enable = true;
+        # Keep the legacy path; migrating would require moving ~/.mozilla/firefox.
+        configPath = ".mozilla/firefox";
+        # Use the fixed `default` path (not a host-specific random name like
+        # `unf7mjew.default`) so this profile config is portable across hosts.
+        # NOTE: home-manager does NOT migrate an existing profile here -- it just
+        # writes profiles.ini + declarative bits into ~/.mozilla/firefox/default.
+        # On each host with a pre-existing Firefox profile, you must manually
+        # `mv ~/.mozilla/firefox/<random>.default ~/.mozilla/firefox/default`
+        # (with Firefox closed) once, or that host gets a blank profile.
+        profiles.default.isDefault = true;
+      };
       stylix.targets.firefox.profileNames = [ "default" ];
       programs.fish = {
         enable = true;
