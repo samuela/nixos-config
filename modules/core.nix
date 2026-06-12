@@ -37,9 +37,17 @@ in
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 1;
 
-  # See https://github.com/NixOS/nixos-hardware/tree/master/framework/13-inch/7040-amd#updating-firmware
-  # Use `fwupdmgr update` to update firmware.
+  # Keep fwupd available for explicit firmware maintenance, but do not run the
+  # metadata refresh timer automatically. The timer runs `fwupdmgr refresh` as
+  # the fwupd-refresh service user; with fwupd 2.1.4 that non-interactive
+  # refresh can fail Polkit auth for org.freedesktop.fwupd.refresh-remote and
+  # leave fwupd-refresh.service failed, which then breaks rebuild switching.
+  # See https://github.com/NixOS/nixpkgs/issues/530906.
+  # Mask the timer and its oneshot service; manual fwupdmgr use does not need
+  # either unit.
   services.fwupd.enable = true;
+  systemd.services.fwupd-refresh.enable = false;
+  systemd.timers.fwupd-refresh.enable = false;
 
   security.polkit.enable = true;
 
