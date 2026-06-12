@@ -58,6 +58,7 @@ in
         # Build artifacts / package manager caches — large and reproducible.
         "**/node_modules"
         "**/target"           # Rust
+        "**/rust-analyzer-target"  # rust-analyzer uses a separate target dir to avoid locking against cargo
         "**/.lake"            # Lean (Lake build tool)
         "**/.direnv"
         "**/.venv"
@@ -74,6 +75,7 @@ in
         "**/.npm"               # npm package cache
         "**/.bun"               # bun package cache
         "**/.vscode-server"     # re-downloads on connect
+        "/home/*/.julia"        # Julia packages/artifacts/compiled — `Pkg.instantiate()` rebuilds
 
         # Per-user caches.
         "/home/*/.cache"
@@ -85,19 +87,35 @@ in
         "**/startupCache"
         "**/shader-cache"
         "/home/*/.mozilla/firefox/*/storage/default/*/cache"
+        "/home/*/.var/app/app.zen_browser.zen/.zen/*/storage/default/*/cache"
 
-        # Browser caches (Chromium-family: Chrome, Brave, Edge, Electron apps).
+        # Browser caches (Chromium-family: Chrome, Brave, Edge, Chromium, Electron apps).
         "**/GPUCache"
         "**/Code Cache"
         "**/Service Worker/CacheStorage"
         "**/Service Worker/ScriptCache"
+        "**/component_crx_cache"   # bundled component extensions (Widevine, recovery, etc.) — re-fetched
+        "**/extensions_crx_cache"  # downloaded extension CRX cache — re-fetched
         "/home/*/.config/google-chrome/*/Cache"
         "/home/*/.config/BraveSoftware/*/Cache"
+        "/home/*/.config/chromium/*/Cache"
         "/home/*/.config/Code/Cache*"
+        "/home/*/.config/Code/WebStorage"
         "/home/*/.config/obsidian/Cache"
+
+        # VSCode — extensions reinstall from marketplace; globalStorage holds large extension caches.
+        "/home/*/.vscode/extensions"
+        "/home/*/.config/Code/User/globalStorage"
 
         # AI agent cache-y stuff
         "**/.openclaw/browser"
+
+        # Steam — game data, runtime libs, and client are all re-downloaded on first launch.
+        # Per-user settings under userdata/ are mirrored to Steam Cloud by any game that cares.
+        "/home/*/.local/share/Steam"
+
+        # Vicinae local file-search index — rebuilt on first run.
+        "/home/*/.local/share/vicinae/file-indexer.db*"
 
         # Upstream-clone .git histories — the working tree is backed up so any
         # local edits are preserved, but the .git/ history is re-derivable via
