@@ -95,6 +95,9 @@ in
     criticalPowerAction = "Hibernate";
   };
 
+  # Enable verbose UPower logging to diagnose battery action failures
+  systemd.services.upower.environment.G_MESSAGES_DEBUG = "all";
+
   # HibernateDelaySec: When using "suspend-then-hibernate", stay suspended for 30m before hibernating
   systemd.sleep.settings.Sleep.HibernateDelaySec = "30m";
 
