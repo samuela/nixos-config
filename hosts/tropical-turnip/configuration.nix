@@ -46,6 +46,7 @@ in
     ./hardware-configuration.nix
     ../../modules/core.nix
     ../../modules/oom-mitigations.nix
+    ../../modules/restic-backup.nix
   ];
 
   networking.hostName = "tropical-turnip";
@@ -125,6 +126,8 @@ in
       esac
     '';
   };
+
+  services.resticBackup.enable = true;
 
   # swayidle with smart-suspend for idle suspension
   home-manager.users.skainswo =
