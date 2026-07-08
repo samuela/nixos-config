@@ -47,6 +47,8 @@ in
     ../../modules/core.nix
     ../../modules/oom-mitigations.nix
     ../../modules/restic-backup.nix
+./debug-ttm-kernel.nix # adds a "debug-ttm" boot entry (KASAN/lockdep/kunit) for drm/amd #5387
+
   ];
 
   networking.hostName = "tropical-turnip";
@@ -58,6 +60,15 @@ in
   boot.extraModprobeConfig = ''
     options mt7921e disable_aspm=1
   '';
+
+  # Cap how many generations get kernels+initrds on the 511M ESP. Without this,
+  # every generation accumulates until /boot fills and bootloader install fails
+  # with ENOSPC. The debug-ttm specialisation adds a SECOND (KASAN)
+  # kernel+initrd per generation (~150 MB/generation total), so the ESP only
+  # holds ~3 while it is enabled. Bump this back to ~8-10 after removing the
+  # debug-ttm specialisation.
+  boot.loader.systemd-boot.configurationLimit = 3;
+
 
   ### Hibernation, swap, and power management
 
@@ -81,7 +92,40 @@ in
     # last device touched before a hang is identifiable in dmesg.
     "pm_debug_messages"
     "no_console_suspend"
+# Crash capture for the intermittent hibernation hang: reserve 2M of RAM
+# for ramoops. On panic the kernel memcpys the tail of dmesg there (works
+# even with the I/O stack suspended); contents survive the warm reboot
+# triggered by kernel.panic below and appear in /sys/fs/pstore, which
+# systemd-pstore archives to /var/lib/systemd/pstore. A cold boot (battery
+# death / forced power-off) loses the buffer, but the panic sysctls below
+# should reboot the machine long before the battery drains.
+"reserve_mem=2M:4096:ramoops" "ramoops.mem_name=ramoops" "ramoops.record_size=0x20000" # 128K per panic record
+  "ramoops.max_reason=2" # capture on oops and panic
+  "pstore.kmsg_bytes=0x20000" # snapshot 128K of dmesg, not the 10K default
+
   ];
+
+  # ramoops is built as a module; load it at boot so the pstore backend
+  # registers (its parameters come from the cmdline above).
+  boot.kernelModules = [ "ramoops" ];
+
+  # Turn a hibernation hang into a panic (captured by ramoops) followed by a
+  # warm reboot, instead of an 11-hour battery drain with no logs. A stuck
+  # device-suspend callback parks the sleep task in D-state, which the hung
+  # task detector catches after 120s (kernel default); softlockup/hardlockup
+  # cover the with-interrupts-off variants.
+  boot.kernel.sysctl = {
+    "kernel.hung_task_panic" = 1;
+    "kernel.softlockup_panic" = 1;
+    "kernel.hardlockup_panic" = 1;
+    "kernel.panic" = 10; # reboot 10s after panic
+  };
+
+  # Serialize device suspend/resume so the pm_debug_messages trace is
+  # sequential: the last callback logged before a hang is the culprit. With
+  # async suspend (default), many devices suspend concurrently and log order
+  # proves nothing. Costs a few hundred ms per suspend.
+  systemd.tmpfiles.rules = [ "w /sys/power/pm_async - - - - 0" ];
 
   # Power management - prevent file system corruption from sudden battery death
   # When battery hits 5%, the system will hibernate (save RAM to disk)
