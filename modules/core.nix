@@ -422,8 +422,20 @@ in
       };
       programs.git = {
         enable = true;
+        # gitFull builds git-send-email with the SMTP/TLS Perl modules
+        # (IO::Socket::SSL, Authen::SASL) that plain pkgs.git omits.
+        package = pkgs.gitFull;
         settings.user.email = "skainsworth@gmail.com";
         settings.user.name = "Samuel Ainsworth";
+        # Outgoing mail for `git send-email` (e.g. kernel patches). The SMTP
+        # password is deliberately not stored here -- git prompts for it (use a
+        # Gmail App Password). https://myaccount.google.com/apppasswords
+        settings.sendemail = {
+          smtpServer = "smtp.gmail.com";
+          smtpServerPort = 587;
+          smtpEncryption = "tls";
+          smtpUser = "skainsworth@gmail.com";
+        };
       };
       programs.btop.enable = true;
       programs.htop.enable = true;
