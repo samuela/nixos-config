@@ -154,20 +154,134 @@ in
 
   # Turn internal screen off/on when lid is closed/opened. This is separate from
   # suspend handling (which is done by swayidle's smart-suspend based on idle time).
-  # Only affects eDP-1 (internal display), so external monitors remain on.
+  # Only affects eDP-1 (internal display), so external monitors remain on. When
+  # closing the lid undocked, pause MPRIS media players in the user session.
   services.acpid = {
     enable = true;
+    logEvents = true;
     lidEventCommands = ''
-      export XDG_RUNTIME_DIR=/run/user/$(${pkgs.coreutils}/bin/id -u skainswo)
+      log_lid_event() {
+        ${pkgs.util-linux}/bin/logger -t lid-event -- "$*"
+      }
+
+      user_uid=$(${pkgs.coreutils}/bin/id -u skainswo)
+      export XDG_RUNTIME_DIR=/run/user/$user_uid
+      export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+
+      log_lid_event "start: raw_event='$1' user_uid=$user_uid xdg_runtime_dir=$XDG_RUNTIME_DIR dbus_session_bus_address=$DBUS_SESSION_BUS_ADDRESS pid=$$"
+
+      external_display_connected=false
+      drm_summary=""
+      for status in /sys/class/drm/card*-*/status; do
+        if [ ! -e "$status" ]; then continue; fi
+
+        connector=$(${pkgs.coreutils}/bin/basename "$(${pkgs.coreutils}/bin/dirname "$status")")
+        connector_status=$(${pkgs.coreutils}/bin/cat "$status" 2>/dev/null || true)
+        drm_summary="$drm_summary $connector:$connector_status"
+
+        case "$connector" in
+          *-eDP-*|*-LVDS-*|*-DSI-*) continue ;;
+        esac
+
+        if [ "$connector_status" = connected ]; then
+          external_display_connected=true
+          break
+        fi
+      done
+      log_lid_event "drm: external_display_connected=$external_display_connected connectors='$drm_summary'"
+
+      run_user_playerctl() {
+        if [ "$(${pkgs.coreutils}/bin/id -u)" = "$user_uid" ]; then
+          ${pkgs.coreutils}/bin/env \
+            XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+            DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
+            ${pkgs.playerctl}/bin/playerctl "$@"
+        else
+          ${pkgs.util-linux}/bin/runuser -u skainswo -- \
+            ${pkgs.coreutils}/bin/env \
+              XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+              DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
+              ${pkgs.playerctl}/bin/playerctl "$@"
+        fi
+      }
+
+      pause_media_if_undocked() {
+        if [ "$external_display_connected" = true ]; then
+          log_lid_event "media: skip pause because external display is connected"
+          return
+        fi
+
+        players=$(run_user_playerctl -l 2>&1 | ${pkgs.coreutils}/bin/tr '\n' ';')
+        status_before=$(run_user_playerctl -a status 2>&1 | ${pkgs.coreutils}/bin/tr '\n' ';')
+        run_user_playerctl -a pause >/dev/null 2>&1
+        pause_rc=$?
+        status_after=$(run_user_playerctl -a status 2>&1 | ${pkgs.coreutils}/bin/tr '\n' ';')
+
+        log_lid_event "media: players='$players' before='$status_before' pause_rc=$pause_rc after='$status_after'"
+        return 0
+      }
+
+      lid_action() {
+        for state in /proc/acpi/button/lid/*/state; do
+          if [ ! -e "$state" ]; then continue; fi
+
+          state_value=$(${pkgs.coreutils}/bin/cat "$state" 2>/dev/null || true)
+          log_lid_event "lid-state: source=$state value='$state_value'"
+          case "$state_value" in
+            *closed*) echo close; return ;;
+            *open*) echo open; return ;;
+          esac
+        done
+
+        # Event is passed as a single string, commonly "button/lid LID0 close",
+        # but some firmware reports numeric payloads instead.
+        case "$1" in
+          *closed*|*close*)
+            log_lid_event "lid-state: fallback raw_event='$1' action=close"
+            echo close
+            ;;
+          *open*)
+            log_lid_event "lid-state: fallback raw_event='$1' action=open"
+            echo open
+            ;;
+          *)
+            log_lid_event "lid-state: fallback raw_event='$1' action=unknown"
+            echo unknown
+            ;;
+        esac
+      }
+
+      action=$(lid_action "$1")
       # Find niri socket dynamically (includes PID which changes on restart)
-      export NIRI_SOCKET=$(${pkgs.findutils}/bin/find $XDG_RUNTIME_DIR -maxdepth 1 -name "niri.*.sock" 2>/dev/null | head -1)
-      if [ -z "$NIRI_SOCKET" ]; then exit 0; fi
-      # Event is passed as single string like "button/lid LID0 close"
-      action=$(echo "$1" | ${pkgs.gawk}/bin/awk '{print $3}')
+      export NIRI_SOCKET=$(${pkgs.findutils}/bin/find "$XDG_RUNTIME_DIR" -maxdepth 1 -name "niri.*.sock" -print -quit 2>/dev/null)
+      log_lid_event "decision: action=$action niri_socket='$NIRI_SOCKET'"
+
       case "$action" in
-        close) ${pkgs.niri}/bin/niri msg output eDP-1 off ;;
-        open)  ${pkgs.niri}/bin/niri msg output eDP-1 on ;;
+        close)
+          pause_media_if_undocked
+          if [ -n "$NIRI_SOCKET" ]; then
+            niri_output=$(${pkgs.niri}/bin/niri msg output eDP-1 off 2>&1 | ${pkgs.coreutils}/bin/tr '\n' ';')
+            niri_rc=$?
+            log_lid_event "niri: output=eDP-1 off rc=$niri_rc output='$niri_output'"
+          else
+            log_lid_event "niri: skip output=eDP-1 off because niri socket was not found"
+          fi
+          ;;
+        open)
+          if [ -n "$NIRI_SOCKET" ]; then
+            niri_output=$(${pkgs.niri}/bin/niri msg output eDP-1 on 2>&1 | ${pkgs.coreutils}/bin/tr '\n' ';')
+            niri_rc=$?
+            log_lid_event "niri: output=eDP-1 on rc=$niri_rc output='$niri_output'"
+          else
+            log_lid_event "niri: skip output=eDP-1 on because niri socket was not found"
+          fi
+          ;;
+        *)
+          log_lid_event "decision: no action for raw_event='$1'"
+          ;;
       esac
+
+      log_lid_event "done: action=$action"
     '';
   };
 
