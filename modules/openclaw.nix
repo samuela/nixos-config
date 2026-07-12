@@ -4,7 +4,7 @@ let
   openclaw-pkgs = import unstableNixpkgsSrc {
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = [ "openclaw-2026.6.1" ];
+      permittedInsecurePackages = [ "openclaw-2026.6.11" ];
     };
   };
 

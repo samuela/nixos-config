@@ -15,10 +15,38 @@ let
   noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" { };
   noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
 
-  # Tracking nixpkgs master branch. Last updated 2026-06-10.
-  unstable-nixpkgs-src = builtins.fetchTarball "https://github.com/NixOS/nixpkgs/archive/68d26685bfe09586862c795723316c63576f1ec3.tar.gz";
+  # Tracking nixpkgs master branch. Last updated 2026-07-10.
+  unstable-nixpkgs-src = builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/a95a733de5cb27ebaf3e8dee8a61e62d273a0f35.tar.gz";
+    sha256 = "sha256-ebc5LVsmzwt7187+RvVN0Wtb82PN1fWV1WEfQSEQXRU=";
+  };
 
-  unstable-nixpkgs-patched = unstable-nixpkgs-src;
+  unstable-nixpkgs-patched = pkgs.applyPatches {
+    name = "nixpkgs-master-with-codex-0.144.1";
+    src = unstable-nixpkgs-src;
+    patches = [
+      # Drop once https://github.com/NixOS/nixpkgs/pull/540177 reaches master.
+      (pkgs.fetchurl {
+        url = "https://github.com/NixOS/nixpkgs/commit/39231ad2214a49f3e49589b661099a9655a51e63.patch";
+        hash = "sha256-3cTniF7Yzch6/TO2P7Gy2eckmWmWmPP272sTIqZF71Q=";
+      })
+
+      # Drop once upstream fixes the 2026.6.11 pnpmDepsHash.
+      (pkgs.writeText "openclaw-2026.6.11-pnpm-deps-hash.patch" ''
+        --- a/pkgs/by-name/op/openclaw/package.nix
+        +++ b/pkgs/by-name/op/openclaw/package.nix
+        @@ -27,7 +27,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
+             hash = "sha256-Ryj+aJ4Daql/ILs3Z/Gi+ltBGQfOdtXKJoOqr3YNoQ0=";
+           };
+
+        -  pnpmDepsHash = "sha256-WvMphvtdimFXIx6kTQ5DMW9dcXS1tcFu2v3W1aiiW+4=";
+        +  pnpmDepsHash = "sha256-GJJMQM2ORCdjtzkXUSTW34Fgw/X3tGgb/KdNjExWeqY=";
+
+           pnpmDeps = fetchPnpmDeps {
+             inherit (finalAttrs) pname version src;
+      '')
+    ];
+  };
 
   unstable-pkgs = import unstable-nixpkgs-patched {
     config.allowUnfree = true;
