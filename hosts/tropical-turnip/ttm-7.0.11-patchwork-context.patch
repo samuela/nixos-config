@@ -1,0 +1,10 @@
+Linux 7.0.11 differs from Thomas Hellström's Patchwork v2 context by one
+space in this comment. Normalize it so GNU patch does not mistake the
+upstream ttm_resource.c diff for a reversed patch. No executable code changes.
+
+diff --git a/drivers/gpu/drm/ttm/ttm_resource.c b/drivers/gpu/drm/ttm/ttm_resource.c
+--- a/drivers/gpu/drm/ttm/ttm_resource.c
++++ b/drivers/gpu/drm/ttm/ttm_resource.c
+@@ -40 +40 @@
+-/* Detach the cursor from the bulk move list*/
++/* Detach the cursor from the bulk move list */

@@ -27,7 +27,15 @@
 #     (then hibernate; ramoops will capture the panic at the WARN instead of 17
 #     minutes later at the list_del).
 
-{ lib, ... }:
+{ lib, pkgs, ... }:
+let
+  # Thomas Hellström's upstream v2 structural fix from drm/amd #5387.
+  # Patchwork: https://patchwork.freedesktop.org/patch/740147/
+  ttmNestedSublistsV2 = pkgs.fetchurl {
+    url = "https://patchwork.freedesktop.org/patch/740147/raw/";
+    hash = "sha256-3NKCSlg1dEFFVtw/162VcYm3yywYHtDD8SeryB5ajzw=";
+  };
+in
 {
   specialisation.debug-ttm.configuration = {
     system.nixos.tags = [ "debug-ttm" ];
@@ -48,11 +56,18 @@
         };
       }
       {
+        # Linux 7.0.11 differs from Thomas's patch context by one space in a
+        # comment. Without this no-op normalization, GNU patch mistakes the
+        # first ttm_resource.c hunk for an already-applied/reversed patch.
+        name = "ttm-7.0.11-patchwork-context";
+        patch = ./ttm-7.0.11-patchwork-context.patch;
+      }
+      {
         # ===================================================================
         # ONE debug kernel at a time -- pick exactly one of the two patches
         # below (ESP space is tight; two debug specs won't both fit).
         #
-        #   ttm-5387-v2-fix.patch    -> the FIX. Pass criterion: run
+        #   Thomas's nested-sublists v2 -> the FIX. Pass criterion: run
         #       `~/ttm-trigger.sh hib N` (or `load SECS`) and KASAN/DEBUG_LIST/
         #       lockdep stay SILENT. This is the validation kernel.
         #
@@ -62,8 +77,8 @@
         #       PLANT within one load-across-hibernate cycle. Then flip back to
         #       the fix patch, rebuild, and confirm the same workload is silent.
         # ===================================================================
-        name = "ttm-5387-debug";
-        patch = ./ttm-5387-v2-fix.patch;       # FIX: validate it stays KASAN-silent under the proven trigger
+        name = "ttm-5387-nested-sublists-v2";
+        patch = ttmNestedSublistsV2; # Exact upstream v2; validate it stays KASAN-silent under the proven trigger
         # patch = ./ttm-dangle-detector.patch; # DETECTOR: buggy + loud, to PROVE the trigger
       }
     ];
