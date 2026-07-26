@@ -39,6 +39,49 @@ let
         cp ".lake/build/bin/${exeName}" "$out"
       '';
     } nameOrPath content;
+
+  sleepFailureDiagnostics = pkgs.writeShellScript "sleep-failure-diagnostics" ''
+    set +e
+
+    failed_action="$1"
+    echo "sleep-failure: diagnostics begin: action=$failed_action"
+    echo "sleep-failure: timestamp=$(${pkgs.coreutils}/bin/date --iso-8601=seconds)"
+
+    for path in \
+      /proc/cmdline \
+      /proc/sys/kernel/tainted \
+      /sys/power/state \
+      /sys/power/mem_sleep \
+      /sys/power/disk \
+      /sys/power/pm_async \
+      /sys/power/pm_trace \
+      /sys/power/wakeup_count \
+      /sys/power/suspend_stats/*; do
+      if [ -r "$path" ]; then
+        echo "sleep-failure: file=$path value=$(${pkgs.coreutils}/bin/cat "$path")"
+      fi
+    done
+
+    for supply in /sys/class/power_supply/*; do
+      [ -d "$supply" ] || continue
+      for field in \
+        type status online capacity capacity_level \
+        energy_now energy_full energy_full_design power_now \
+        charge_now charge_full charge_full_design current_now voltage_now; do
+        if [ -r "$supply/$field" ]; then
+          echo "sleep-failure: file=$supply/$field value=$(${pkgs.coreutils}/bin/cat "$supply/$field")"
+        fi
+      done
+    done
+
+    ${pkgs.systemd}/bin/systemctl show \
+      systemd-suspend-then-hibernate.service systemd-hibernate.service \
+      --no-pager \
+      --property=Id,LoadState,ActiveState,SubState,Result,ExecMainCode,ExecMainStatus,StatusText,InvocationID
+    ${pkgs.systemd}/bin/journalctl \
+      --boot --dmesg --no-pager --output=short-monotonic --lines=300
+    echo "sleep-failure: diagnostics end: action=$failed_action"
+  '';
 in
 {
   imports = [
@@ -47,7 +90,7 @@ in
     ../../modules/core.nix
     ../../modules/oom-mitigations.nix
     ../../modules/restic-backup.nix
-./debug-ttm-kernel.nix # adds a "debug-ttm" boot entry (KASAN/lockdep/kunit) for drm/amd #5387
+    ./debug-ttm-kernel.nix # adds a "debug-ttm" boot entry (KASAN/lockdep/kunit) for drm/amd #5387
 
   ];
 
@@ -68,7 +111,6 @@ in
   # holds ~3 while it is enabled. Bump this back to ~8-10 after removing the
   # debug-ttm specialisation.
   boot.loader.systemd-boot.configurationLimit = 3;
-
 
   ### Hibernation, swap, and power management
 
@@ -92,22 +134,26 @@ in
     # last device touched before a hang is identifiable in dmesg.
     "pm_debug_messages"
     "no_console_suspend"
-# Crash capture for the intermittent hibernation hang: reserve 2M of RAM
-# for ramoops. On panic the kernel memcpys the tail of dmesg there (works
-# even with the I/O stack suspended); contents survive the warm reboot
-# triggered by kernel.panic below and appear in /sys/fs/pstore, which
-# systemd-pstore archives to /var/lib/systemd/pstore. A cold boot (battery
-# death / forced power-off) loses the buffer, but the panic sysctls below
-# should reboot the machine long before the battery drains.
-"reserve_mem=2M:4096:ramoops" "ramoops.mem_name=ramoops" "ramoops.record_size=0x20000" # 128K per panic record
-  "ramoops.max_reason=2" # capture on oops and panic
-  "pstore.kmsg_bytes=0x20000" # snapshot 128K of dmesg, not the 10K default
-
+    # Crash capture for the intermittent hibernation hang: reserve 2M of RAM
+    # for ramoops. On panic the kernel memcpys the tail of dmesg there (works
+    # even with the I/O stack suspended); contents survive the warm reboot
+    # triggered by kernel.panic below and appear in /sys/fs/pstore, which
+    # systemd-pstore archives to /var/lib/systemd/pstore. A cold boot (battery
+    # death / forced power-off) loses the buffer, but the panic sysctls below
+    # should reboot the machine long before the battery drains.
+    "reserve_mem=2M:4096:ramoops"
+    "ramoops.mem_name=ramoops"
+    "ramoops.record_size=0x20000" # 128K per panic record
+    "ramoops.max_reason=2" # capture on oops and panic
+    "pstore.kmsg_bytes=0x20000" # snapshot 128K of dmesg, not the 10K default
+    # Only one pstore backend can register. efi_pstore is built into the kernel
+    # and otherwise claims pstore before the ramoops module can use reserved RAM.
+    "efi_pstore.pstore_disable=1"
   ];
 
-  # ramoops is built as a module; load it at boot so the pstore backend
-  # registers (its parameters come from the cmdline above).
-  boot.kernelModules = [ "ramoops" ];
+  # Load ramoops in the initrd so it registers before normal userspace and
+  # exposes any crash record left in reserved RAM by the previous boot.
+  boot.initrd.kernelModules = [ "ramoops" ];
 
   # Turn a hibernation hang into a panic (captured by ramoops) followed by a
   # warm reboot, instead of an 11-hour battery drain with no logs. A stuck
@@ -115,6 +161,7 @@ in
   # task detector catches after 120s (kernel default); softlockup/hardlockup
   # cover the with-interrupts-off variants.
   boot.kernel.sysctl = {
+    "kernel.panic_on_oops" = 1;
     "kernel.hung_task_panic" = 1;
     "kernel.softlockup_panic" = 1;
     "kernel.hardlockup_panic" = 1;
@@ -125,7 +172,12 @@ in
   # sequential: the last callback logged before a hang is the culprit. With
   # async suspend (default), many devices suspend concurrently and log order
   # proves nothing. Costs a few hundred ms per suspend.
-  systemd.tmpfiles.rules = [ "w /sys/power/pm_async - - - - 0" ];
+  systemd.tmpfiles.rules = [
+    "w /sys/power/pm_async - - - - 0"
+    # pm_trace uses the RTC for fingerprints and conflicts with the wake alarm
+    # needed by suspend-then-hibernate. Enable it only for controlled tests.
+    "w /sys/power/pm_trace - - - - 0"
+  ];
 
   # Power management - prevent file system corruption from sudden battery death
   # When battery hits 5%, the system will hibernate (save RAM to disk)
@@ -143,8 +195,54 @@ in
   # Enable verbose UPower logging to diagnose battery action failures
   systemd.services.upower.environment.G_MESSAGES_DEBUG = "all";
 
-  # HibernateDelaySec: When using "suspend-then-hibernate", stay suspended for 30m before hibernating
-  systemd.sleep.settings.Sleep.HibernateDelaySec = "30m";
+  systemd.sleep.settings.Sleep = {
+    # Stay suspended for 30 minutes before writing the hibernation image.
+    HibernateDelaySec = "30m";
+    # Power off directly after writing the image. The default "platform" mode
+    # asks ACPI firmware to enter S4, which is an extra failure point after the
+    # image is already safely on disk.
+    HibernateMode = "shutdown";
+  };
+
+  # `systemctl suspend-then-hibernate` only enqueues the sleep request, so the
+  # user-session caller cannot observe a later systemd-sleep failure. Capture
+  # it on the system unit itself and then make one direct hibernation attempt.
+  systemd.services."systemd-suspend-then-hibernate".onFailure = [
+    "hibernate-fallback.service"
+  ];
+
+  systemd.services.hibernate-fallback = {
+    description = "Capture suspend-then-hibernate failure and fall back to hibernation";
+    serviceConfig.Type = "oneshot";
+    script = ''
+      ${sleepFailureDiagnostics} suspend-then-hibernate
+      for delay in 2 5 10; do
+        echo "sleep-failure: requesting hibernate fallback after ''${delay}s"
+        ${pkgs.coreutils}/bin/sleep "$delay"
+        if ${pkgs.systemd}/bin/systemctl hibernate; then
+          echo "sleep-failure: hibernate fallback enqueued"
+          exit 0
+        fi
+      done
+      echo "sleep-failure: unable to enqueue hibernate fallback"
+      exit 1
+    '';
+  };
+
+  # If the fallback itself returns a regular failure, preserve the same
+  # diagnostics. A kernel hang cannot run OnFailure; panic/watchdog capture is
+  # responsible for that case.
+  systemd.services."systemd-hibernate".onFailure = [
+    "hibernate-failure-diagnostics.service"
+  ];
+
+  systemd.services.hibernate-failure-diagnostics = {
+    description = "Capture hibernation failure diagnostics";
+    serviceConfig.Type = "oneshot";
+    script = ''
+      ${sleepFailureDiagnostics} hibernate
+    '';
+  };
 
   # Ignore lid switch events and let swayidle's smart-suspend handle suspension.
   # This allows smart-suspend to check power state and audio activity before suspending.
