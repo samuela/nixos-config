@@ -51,6 +51,26 @@ let
   unstable-pkgs = import unstable-nixpkgs-patched {
     config.allowUnfree = true;
   };
+
+  # Includes Supreeeme/xwayland-satellite#387, which fixes a panic when all
+  # outputs are disconnected. Without this, niri's xwayland-satellite exits
+  # with status 101 on lid-close/no-output transitions and kills X11 clients.
+  xwayland-satellite-fixed = pkgs.xwayland-satellite.overrideAttrs (
+    finalAttrs: _old: {
+      version = "0.8.1-unstable-2026-06-12";
+      src = pkgs.fetchFromGitHub {
+        owner = "Supreeeme";
+        repo = "xwayland-satellite";
+        rev = "8575d0ef55d70f9b4c46b6bffb3accf912217e1e";
+        hash = "sha256-28696iIw8uE0ZUyFTtzhEM8xMh85clCYypMxkvUi+sc=";
+      };
+      cargoHash = "sha256-jbEihJYcOwFeDiMYlOtaS8GlunvSze80iWahDj1qDrs=";
+      cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
+        inherit (finalAttrs) pname version src;
+        hash = finalAttrs.cargoHash;
+      };
+    }
+  );
 in
 {
   _module.args.unstableNixpkgsSrc = unstable-nixpkgs-patched;
@@ -365,7 +385,7 @@ in
         swaybg # used in spawn-at-startup by niri config
         swayosd # used in keyboard bindings in niri config. for some reason services.swayosd doesn't add it to PATH
         walker # see services.walker below
-        xwayland-satellite # For steam and other X11 applications. See https://discourse.nixos.org/t/how-to-do-xwayland-on-nixos/57825/11?u=samuela.
+        xwayland-satellite-fixed # For steam and other X11 applications. See https://discourse.nixos.org/t/how-to-do-xwayland-on-nixos/57825/11?u=samuela.
       ]
       # used by rust-analyzer vsocde extension
       # ++ [
