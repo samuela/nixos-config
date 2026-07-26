@@ -263,7 +263,7 @@
     },
     "general": {
         "allowPanelsOnScreenWithoutBar": true,
-        "animationDisabled": false,
+        "animationDisabled": true,
         "animationSpeed": 2,
         "avatarImage": "/home/skainswo/.face",
         "boxRadiusRatio": 1,
@@ -498,7 +498,7 @@
         "solidColor": "#1a1a2e",
         "transitionDuration": 1500,
         "transitionEdgeSmoothness": 0.05,
-        "transitionType": "random",
+        "transitionType": "disc",
         "useSolidColor": false,
         "useWallhaven": false,
         "wallhavenApiKey": "",
