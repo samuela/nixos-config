@@ -38,7 +38,10 @@ let
         +    hash = "sha256-37LZ10P+XGzfU3KVpRhfEElYscoUlE+zi85hmvicjLI=";
         @@ -29 +29 @@
         -  pnpmDepsHash = "sha256-eVyR8SVp0SyjflFomvgn9dgAqvXIUgjCYc5NICxxIg8=";
-        +  pnpmDepsHash = "sha256-/ou2Hoix9m/be6kq4Osg4gTTQQRTkL5uLOuERmevuQ0=";
+        +  pnpmDepsHash = "sha256-KzGqNFKgfJBP0ZmVEOg6Z6qp/dULDNphtkZ6u8vMCpg=";
+        @@ -52 +52 @@
+        -    pnpm build
+        +    OPENCLAW_TSDOWN_MAX_OLD_SPACE_MB=8192 pnpm build
         @@ -77 +77,3 @@
              cp --reflink=auto -r package.json dist node_modules $libdir/
         +    mkdir -p $libdir/packages
