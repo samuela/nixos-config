@@ -21,7 +21,33 @@ let
     sha256 = "sha256-l5FmH6o98w3jm8zre0UT1cjGDMudhtPq5KbNbLkiVgU=";
   };
 
-  unstable-pkgs = import unstable-nixpkgs-src {
+  unstable-nixpkgs-patched = pkgs.applyPatches {
+    name = "nixpkgs-master-with-openclaw-2026.7.1";
+    src = unstable-nixpkgs-src;
+    patches = [
+      # Nixpkgs currently carries 2026.6.33; package the latest stable release.
+      # Drop once nixpkgs updates OpenClaw to 2026.7.1 or newer.
+      (pkgs.writeText "openclaw-2026.7.1.patch" ''
+        --- a/pkgs/by-name/op/openclaw/package.nix
+        +++ b/pkgs/by-name/op/openclaw/package.nix
+        @@ -13 +13 @@
+        -  version ? "2026.6.33",
+        +  version ? "2026.7.1",
+        @@ -26 +26 @@
+        -    hash = "sha256-OdH5olBLDGQYCtR2ElbzcQ2+Hgy3cZDixkIwmSPh9Xw=";
+        +    hash = "sha256-37LZ10P+XGzfU3KVpRhfEElYscoUlE+zi85hmvicjLI=";
+        @@ -29 +29 @@
+        -  pnpmDepsHash = "sha256-eVyR8SVp0SyjflFomvgn9dgAqvXIUgjCYc5NICxxIg8=";
+        +  pnpmDepsHash = "sha256-/ou2Hoix9m/be6kq4Osg4gTTQQRTkL5uLOuERmevuQ0=";
+        @@ -77 +77,3 @@
+             cp --reflink=auto -r package.json dist node_modules $libdir/
+        +    mkdir -p $libdir/packages
+        +    cp --reflink=auto -r packages/ai $libdir/packages/
+      '')
+    ];
+  };
+
+  unstable-pkgs = import unstable-nixpkgs-patched {
     config.allowUnfree = true;
   };
 
@@ -46,7 +72,7 @@ let
   );
 in
 {
-  _module.args.unstableNixpkgsSrc = unstable-nixpkgs-src;
+  _module.args.unstableNixpkgsSrc = unstable-nixpkgs-patched;
   _module.args.unstablePkgs = unstable-pkgs;
 
   imports = [
@@ -339,6 +365,8 @@ in
         unstable-pkgs.mkchromecast
         unstable-pkgs.vscode
         # unstable-pkgs.crush # https://github.com/NixOS/nixpkgs/issues/470068
+
+        brave
 
         chromium
         clang # many rust libs require having a `cc`

@@ -4,7 +4,7 @@ let
   openclaw-pkgs = import unstableNixpkgsSrc {
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = [ "openclaw-2026.6.11" ];
+      permittedInsecurePackages = [ "openclaw-2026.7.1" ];
     };
   };
 
@@ -31,6 +31,8 @@ let
     "/home/skainswo/.fnm/current/bin"
     "/home/skainswo/.local/share/pnpm"
   ];
+
+  openclawBrowserExecutable = "${pkgs.brave}/bin/brave";
 in
 {
   # Keep the per-user systemd instance running without an active login session
@@ -39,10 +41,16 @@ in
 
   environment.systemPackages = [ openclaw-pkgs.openclaw ];
 
-  home-manager.users.skainswo = {
-    home.file.".config/systemd/user/openclaw-gateway.service.d/path.conf".text = ''
-      [Service]
-      Environment=PATH=${openclawServicePath}
-    '';
-  };
+  home-manager.users.skainswo =
+    { lib, ... }:
+    {
+      home.file.".config/systemd/user/openclaw-gateway.service.d/path.conf".text = ''
+        [Service]
+        Environment=PATH=${openclawServicePath}
+      '';
+
+      home.activation.configureOpenClawBrowser = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        run --silence ${openclaw-pkgs.openclaw}/bin/openclaw config set browser.executablePath ${pkgs.lib.escapeShellArg openclawBrowserExecutable}
+      '';
+    };
 }
