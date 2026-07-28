@@ -1,9 +1,23 @@
 # Configuration for luminous-lemon (ThinkPad L13 Gen 1)
-{ config, ... }:
+{ config, pkgs, ... }:
 
 let
   # Last updated 2025-12-12
   nixos-hardware = builtins.fetchTarball "https://github.com/NixOS/nixos-hardware/archive/9154f4569b6cdfd3c595851a6ba51bfaa472d9f3.tar.gz";
+
+  # HDMI-attached Google TV. CEC isn't wired through on this laptop's HDMI port,
+  # so we control the TV over the network via ADB instead.
+  tvIp = "192.168.4.39";
+  mkTvCmd =
+    name: keycode:
+    pkgs.writeShellApplication {
+      inherit name;
+      runtimeInputs = [ pkgs.android-tools ];
+      text = ''
+        adb connect ${tvIp}:5555 >/dev/null
+        adb -s ${tvIp}:5555 shell input keyevent ${keycode}
+      '';
+    };
 in
 {
   imports = [
@@ -19,6 +33,11 @@ in
   networking.hostName = "luminous-lemon";
 
   services.resticBackup.enable = true;
+
+  environment.systemPackages = [
+    (mkTvCmd "tv-on" "KEYCODE_WAKEUP")
+    (mkTvCmd "tv-off" "KEYCODE_SLEEP")
+  ];
 
   # Follow upstream throttled master until a release after v0.11 lands in nixpkgs.
   # We need a6a95bd, which makes temperature-only configs work by skipping the
