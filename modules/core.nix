@@ -51,6 +51,56 @@ let
     config.allowUnfree = true;
   };
 
+  tmuxAgentStatus = pkgs.writeShellApplication {
+    name = "tmux-agent-status";
+    runtimeInputs = with pkgs; [
+      gnugrep
+      tmux
+    ];
+    text = ''
+      pane_id="''${1:-}"
+
+      if [ -z "$pane_id" ]; then
+        exit 0
+      fi
+
+      pane_command="$(tmux display-message -p -t "$pane_id" '#{pane_current_command}' 2>/dev/null || true)"
+      if [ "$pane_command" != "codex" ]; then
+        exit 0
+      fi
+
+      pane_title="$(tmux display-message -p -t "$pane_id" '#{pane_title}' 2>/dev/null || true)"
+
+      case "$pane_title" in
+        ⠋*|⠙*|⠹*|⠸*|⠼*|⠴*|⠦*|⠧*|⠇*|⠏*)
+          printf '#[fg=green]●#[default]'
+          exit 0
+          ;;
+      esac
+
+      bottom_text="$(tmux capture-pane -p -t "$pane_id" -S -8 2>/dev/null || true)"
+      last_nonempty=""
+      while IFS= read -r line; do
+        if [ -n "$line" ]; then
+          last_nonempty="$line"
+        fi
+      done < <(printf '%s\n' "$bottom_text")
+
+      case "$last_nonempty" in
+        "› "*)
+          printf '#[fg=cyan]?#[default]'
+          exit 0
+          ;;
+      esac
+
+      if printf '%s\n' "$bottom_text" | grep -Eiq 'Would you like to run the following command|Press enter to confirm or esc to cancel|^› 1\. Yes, proceed'; then
+        printf '#[fg=yellow]!#[default]'
+      else
+        printf '#[fg=cyan]?#[default]'
+      fi
+    '';
+  };
+
   # Includes Supreeeme/xwayland-satellite#387, which fixes a panic when all
   # outputs are disconnected. Without this, niri's xwayland-satellite exits
   # with status 101 on lid-close/no-output transitions and kills X11 clients.
@@ -521,6 +571,12 @@ in
           # Navigate through windows with Ctrl-PageDown and Ctrl-PageUp
           bind-key -n C-PageDown next-window
           bind-key -n C-PageUp previous-window
+
+          # Show compact per-window Codex state indicators:
+          # green dot = working, cyan ? = waiting for prompt, yellow ! = waiting for approval.
+          set -g status-interval 2
+          set -g window-status-format "#I:#W#{?window_flags,#{window_flags}, }#(${tmuxAgentStatus}/bin/tmux-agent-status #{pane_id})  "
+          set -g window-status-current-format "#I:#W#{?window_flags,#{window_flags}, }#(${tmuxAgentStatus}/bin/tmux-agent-status #{pane_id})  "
         '';
       };
 
