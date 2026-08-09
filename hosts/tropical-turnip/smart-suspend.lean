@@ -165,17 +165,54 @@ def onlinePowerSupplies : IO (List String) := do
   let online ← entries.filterM isOnlinePowerSupply
   return online.map (·.fileName)
 
-def blocker? : IO (Option String) := do
+/--
+Battery percentage at or below which every overridable blocker is ignored and
+the machine sleeps regardless.
+
+Hibernation on this host writes an ~11 GB image and measures 3-4 minutes end to
+end, so the floor has to leave real runtime rather than a token amount. See
+issues #6 and #7: a latched audio sink deferred sleep until the battery was
+flat, and the emergency hibernation UPower fired at 2% never finished writing
+its image.
+-/
+def batteryFloorPercent : Nat := 20
+
+/--
+Consecutive 60-second deferrals tolerated for an overridable blocker before
+sleeping anyway. This bounds the damage from any blocker that latches on and
+never clears, independently of whether the battery reading is trustworthy. The
+gauge on this host is known to over-report near empty, so the floor above cannot
+be the only protection.
+-/
+def maxConsecutiveDeferrals : Nat := 120
+
+def batteryPercent? : IO (Option Nat) := do
+  match ← readTrimLower? "/sys/class/power_supply/BAT1/capacity" with
+  | none => return none
+  | some raw => return raw.toNat?
+
+/--
+Why sleep is being deferred.
+
+External power is deliberately never overridden: while plugged in the battery is
+not at risk and staying awake is the intended behaviour. Every other blocker is
+overridable by the battery floor or the deferral cap.
+-/
+inductive Blocker where
+  | externalPower (supplies : String)
+  | overridable (reason : String)
+
+def blocker? : IO (Option Blocker) := do
   let onlineSupplies ← onlinePowerSupplies
   if !onlineSupplies.isEmpty then
-    return some s!"external power online: {String.intercalate ", " onlineSupplies}"
+    return some (.externalPower (String.intercalate ", " onlineSupplies))
   let battery ← readTrimLower? "/sys/class/power_supply/BAT1/status"
   if battery != some "discharging" then
-    return some s!"battery state: {battery.getD "unknown"}"
+    return some (.overridable s!"battery state: {battery.getD "unknown"}")
   else if ← hasRunningStream "sinks" then
-    return some "audio sink running"
+    return some (.overridable "audio sink running")
   else if ← hasRunningStream "sources" then
-    return some "audio source running"
+    return some (.overridable "audio source running")
   else
     log "eligibility checks passed: no external power; battery discharging; no active audio"
     return none
@@ -238,13 +275,35 @@ def pidAlive (pid : String) : IO Bool := do
   else
     return (← (FilePath.mk s!"/proc/{pid}").pathExists)
 
-partial def waitLoop : IO UInt32 := do
+partial def waitLoop (deferrals : Nat) : IO UInt32 := do
   match ← blocker? with
-  | some reason =>
-      log s!"waiting: {reason}"
-      IO.sleep 60000
-      waitLoop
   | none => suspendNow
+  | some (.externalPower supplies) =>
+      -- Not counted as a deferral. Staying awake on AC is the intended steady
+      -- state and can legitimately last for days, so it must never accumulate
+      -- toward the cap.
+      log s!"waiting: external power online: {supplies}"
+      IO.sleep 60000
+      waitLoop 0
+  | some (.overridable reason) =>
+      let percent? ← batteryPercent?
+      let percentText := match percent? with
+        | some percent => s!"{percent}%"
+        | none => "unknown"
+      let belowFloor : Bool := match percent? with
+        | some percent => percent <= batteryFloorPercent
+        | none => false
+      let deferrals := deferrals + 1
+      if belowFloor then
+        log s!"override: battery {percentText} at or below floor {batteryFloorPercent}%; sleeping despite blocker: {reason}"
+        suspendNow
+      else if deferrals >= maxConsecutiveDeferrals then
+        log s!"override: blocker '{reason}' deferred {deferrals} consecutive checks (cap {maxConsecutiveDeferrals}); sleeping anyway"
+        suspendNow
+      else
+        log s!"waiting: {reason} (deferral {deferrals}/{maxConsecutiveDeferrals}; battery {percentText})"
+        IO.sleep 60000
+        waitLoop deferrals
 
 def runArm : IO UInt32 := do
   IO.FS.createDirAll (← stateDir)
@@ -258,7 +317,7 @@ def runArm : IO UInt32 := do
 
   try
     log "armed"
-    waitLoop
+    waitLoop 0
   finally
     removePidFile
 
