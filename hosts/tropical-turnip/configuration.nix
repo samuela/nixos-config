@@ -180,11 +180,20 @@ in
   ];
 
   # Power management - prevent file system corruption from sudden battery death
-  # When battery hits 5%, the system will hibernate (save RAM to disk)
+  # When battery hits 5%, the system will hibernate (save RAM to disk).
+  #
+  # These three MUST be strictly descending: low > critical > action. UPower's
+  # policy_config_validate() tests IS_DESCENDING(low, critical, action) and, when
+  # that fails, silently discards ALL THREE values and reloads its built-in
+  # defaults of 20/5/2 without logging anything at all. percentageCritical and
+  # percentageAction were previously both 5, which is not strictly descending, so
+  # the effective action threshold was really 2%. That is far too low to write an
+  # ~11 GB hibernation image, which measures 3-4 minutes end to end on this host.
+  # The battery was destroyed twice as a result: see issues #6 and #7.
   services.upower = {
     enable = true;
-    percentageLow = 15; # Warn at 15%
-    percentageCritical = 5; # Critical at 5%
+    percentageLow = 20; # Warn at 20%
+    percentageCritical = 10; # Critical at 10%
     percentageAction = 5; # Take action at 5%
     # NOTE: This will attempt hibernate even if there's a kernel mismatch (unlike
     # smart-suspend which falls back to plain suspend). At 5% battery, a failed
