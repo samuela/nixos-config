@@ -5,11 +5,6 @@ open System
 def log (msg : String) : IO Unit :=
   IO.eprintln msg
 
-def containsText (s needle : String) : Bool :=
-  match s.splitOn needle with
-  | _ :: _ :: _ => true
-  | _ => false
-
 def run (cmd : String) (args : Array String) : IO IO.Process.Output :=
   IO.Process.output { cmd, args }
 
@@ -152,9 +147,60 @@ def removePidFile : IO Unit := do
   catch _ =>
     pure ()
 
-def hasRunningStream (kind : String) : IO Bool := do
+/--
+Names of the sinks or sources currently in state RUNNING.
+
+`pactl list <kind> short` is tab separated and ends with the state, which parses
+far more reliably than grepping the long form for "State: RUNNING". If pactl
+fails the output is empty and nothing is reported as running, so a broken pactl
+lets the machine sleep rather than pinning it awake.
+-/
+def runningDevices (kind : String) : IO (List String) := do
+  let out ← run "pactl" #["list", kind, "short"]
+  let mut names := []
+  for line in out.stdout.splitOn "\n" do
+    let fields := (line.splitOn "\t").map (·.toSlice.trimAscii.copy)
+    match fields with
+    | _index :: name :: _rest =>
+        if fields.getLast? == some "RUNNING" then
+          names := names ++ [name]
+    | _ => pure ()
+  return names
+
+/--
+Application names holding streams, e.g. for kind "sink-inputs".
+
+Purely diagnostic. A sink being RUNNING is not actionable on its own: RUNNING
+means some client holds an open, uncorked stream, which is not the same as audio
+being audible. Naming the client is the difference between "audio sink running"
+appearing 221 times with no way to act on it and knowing which process to fix.
+-/
+def streamApplications (kind : String) : IO (List String) := do
   let out ← run "pactl" #["list", kind]
-  return containsText out.stdout "State: RUNNING"
+  let mut apps := []
+  for line in out.stdout.splitOn "\n" do
+    let line := line.toSlice.trimAscii.copy
+    if line.startsWith "application.name = " then
+      let value := (line.drop "application.name = ".length).replace "\"" ""
+      if !(apps.contains value) then
+        apps := apps ++ [value]
+  return apps
+
+def describeAudioBlocker (label : String) (devices apps : List String) : String :=
+  let devicesText := String.intercalate ", " devices
+  -- "streams: none" is itself a useful signal: a device running with nothing
+  -- attached points at PipeWire rather than at any application.
+  let appsText := if apps.isEmpty then "none" else String.intercalate ", " apps
+  s!"{label}: {devicesText} (streams: {appsText})"
+
+def audioBlocker? : IO (Option String) := do
+  let sinks ← runningDevices "sinks"
+  if !sinks.isEmpty then
+    return some (describeAudioBlocker "audio sink running" sinks (← streamApplications "sink-inputs"))
+  let sources ← runningDevices "sources"
+  if !sources.isEmpty then
+    return some (describeAudioBlocker "audio source running" sources (← streamApplications "source-outputs"))
+  return none
 
 def isOnlinePowerSupply (entry : IO.FS.DirEntry) : IO Bool := do
   let onlinePath := entry.path / "online"
@@ -209,13 +255,11 @@ def blocker? : IO (Option Blocker) := do
   let battery ← readTrimLower? "/sys/class/power_supply/BAT1/status"
   if battery != some "discharging" then
     return some (.overridable s!"battery state: {battery.getD "unknown"}")
-  else if ← hasRunningStream "sinks" then
-    return some (.overridable "audio sink running")
-  else if ← hasRunningStream "sources" then
-    return some (.overridable "audio source running")
-  else
-    log "eligibility checks passed: no external power; battery discharging; no active audio"
-    return none
+  match ← audioBlocker? with
+  | some reason => return some (.overridable reason)
+  | none =>
+      log "eligibility checks passed: no external power; battery discharging; no active audio"
+      return none
 
 def suspendCommand : IO String := do
   let booted ← IO.FS.realPath "/run/booted-system/kernel"
