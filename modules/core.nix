@@ -12,7 +12,11 @@ let
   # Pinned to Noctalia v4.7.7. Last updated 2026-05-13.
   noctaliaSrc = builtins.fetchTarball "https://github.com/noctalia-dev/noctalia/archive/3abfa1fc09b62dc4cdeeb7b787886f075696f0b7.tar.gz";
   # noctaliaSrc = ../noctalia-shell;
-  noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" { };
+  noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" {
+    # Noctalia's flake applies this fork as an overlay; pass it explicitly
+    # because this configuration imports package.nix directly.
+    quickshell = pkgs.noctalia-qs;
+  };
   noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
 
   # Tracking nixpkgs master branch. Last updated 2026-07-26.
