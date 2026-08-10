@@ -9,8 +9,8 @@ let
   # Tracking release-26.05 branch. Last updated 2026-06-05
   stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/aacc65706d523528aed81f55c2c780aaeb541d55.tar.gz";
 
-  # Tracking https://github.com/noctalia-dev/noctalia-shell/commits/main. Last updated 2025-01-12
-  noctaliaSrc = builtins.fetchTarball "https://github.com/noctalia-dev/noctalia-shell/archive/2b55ae2c348fcad50089bc334c4a8155b2941d3b.tar.gz";
+  # Pinned to Noctalia v4.7.7. Last updated 2026-05-13.
+  noctaliaSrc = builtins.fetchTarball "https://github.com/noctalia-dev/noctalia/archive/3abfa1fc09b62dc4cdeeb7b787886f075696f0b7.tar.gz";
   # noctaliaSrc = ../noctalia-shell;
   noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" { };
   noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
@@ -509,9 +509,14 @@ in
         enable = true;
         package = noctaliaPackage;
         systemd.enable = true;
-        systemd.mutableRuntimeSettings = true; # https://github.com/noctalia-dev/noctalia-shell/pull/1324
       };
-      # https://github.com/noctalia-dev/noctalia-shell/pull/1324#issuecomment-3752738837
+      # Keep a leaking shell from exhausting swap and wedging the whole host.
+      # The normal post-startup peak is just under 1 GiB; see incident #8.
+      systemd.user.services.noctalia-shell.Service = {
+        MemoryHigh = "1536M";
+        MemoryMax = "2G";
+        MemorySwapMax = "512M";
+      };
       stylix.targets.noctalia-shell.enable = false; # https://github.com/noctalia-dev/noctalia-shell/pull/1324#issuecomment-3747399960
 
       # programs.fuzzel.enable = true;
