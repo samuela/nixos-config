@@ -419,6 +419,7 @@ in
         unstable-pkgs.vscode
         # unstable-pkgs.crush # https://github.com/NixOS/nixpkgs/issues/470068
 
+        apostrophe # default handler for markdown; see xdg.mimeApps below
         brave
 
         chromium
@@ -629,7 +630,25 @@ in
       };
 
       xdg.mimeApps.enable = true;
+      # .md resolves to text/markdown, but Apostrophe's desktop entry only
+      # declares the legacy text/x-markdown and vscode's declares no MimeType=
+      # at all, so associate both explicitly or neither is offered for .md.
+      # Reported upstream: https://gitlab.gnome.org/World/apostrophe/-/issues/681
+      # Filed as an issue rather than an MR pending
+      # https://gitlab.gnome.org/Infrastructure/Infrastructure/-/issues/2368
+      xdg.mimeApps.associations.added = {
+        "text/markdown" = [
+          "org.gnome.gitlab.somas.Apostrophe.desktop"
+          "code.desktop"
+        ];
+        "text/x-markdown" = [
+          "org.gnome.gitlab.somas.Apostrophe.desktop"
+          "code.desktop"
+        ];
+      };
       xdg.mimeApps.defaultApplications = {
+        "text/markdown" = "org.gnome.gitlab.somas.Apostrophe.desktop";
+        "text/x-markdown" = "org.gnome.gitlab.somas.Apostrophe.desktop";
         "text/html" = "app.zen_browser.zen.desktop";
         "x-scheme-handler/http" = "app.zen_browser.zen.desktop";
         "x-scheme-handler/https" = "app.zen_browser.zen.desktop";
