@@ -168,6 +168,14 @@ in
   # Set your time zone.
   time.timeZone = "America/New_York";
 
+  # Flatpak picks the sandbox timezone by lexically matching the /etc/localtime
+  # symlink target against $TZDIR, then falling back to /etc/timezone, then UTC.
+  # Here /etc/localtime -> /etc/zoneinfo/... while GDM-launched processes (and so
+  # niri, and everything niri spawns) inherit TZDIR=/nix/store/...-tzdata-*, so the
+  # match never succeeds and every Flatpak app runs in UTC. NixOS ships no
+  # /etc/timezone, so write one to catch the fallback.
+  environment.etc.timezone.text = "${config.time.timeZone}\n";
+
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
 
