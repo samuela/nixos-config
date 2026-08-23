@@ -9,15 +9,13 @@ let
   # Tracking release-26.05 branch. Last updated 2026-06-05
   stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/aacc65706d523528aed81f55c2c780aaeb541d55.tar.gz";
 
-  # Pinned to Noctalia v4.7.7. Last updated 2026-05-13.
-  noctaliaSrc = builtins.fetchTarball "https://github.com/noctalia-dev/noctalia/archive/3abfa1fc09b62dc4cdeeb7b787886f075696f0b7.tar.gz";
-  # noctaliaSrc = ../noctalia-shell;
-  noctaliaPackage = pkgs.callPackage "${noctaliaSrc}/nix/package.nix" {
-    # Noctalia's flake applies this fork as an overlay; pass it explicitly
-    # because this configuration imports package.nix directly.
-    quickshell = pkgs.noctalia-qs;
+  # Pinned to Noctalia v5.0.0-beta.8. Last updated 2026-08-23.
+  noctaliaSrc = builtins.fetchTarball {
+    url = "https://github.com/noctalia-dev/noctalia/archive/refs/tags/v5.0.0-beta.8.tar.gz";
+    sha256 = "sha256-qy3Cheg/FQ9ZaBPTIgdq4IkmkNtC6XBpmtC8nT+wU/Y=";
   };
-  noctaliaHomeModule = import "${noctaliaSrc}/nix/home-module.nix";
+  # Use Noctalia's pinned nixpkgs so its binary cache remains available.
+  noctalia = import noctaliaSrc { };
 
   # Tracking nixpkgs master branch. Last updated 2026-07-26.
   unstable-nixpkgs-src = builtins.fetchTarball {
@@ -365,7 +363,7 @@ in
     in
     {
       imports = [
-        noctaliaHomeModule
+        noctalia.homeModule
         (import stylix).homeModules.stylix
       ];
 
@@ -517,19 +515,24 @@ in
         inherit shellAliases;
       };
 
-      programs.noctalia-shell = {
+      programs.noctalia = {
         enable = true;
-        package = noctaliaPackage;
         systemd.enable = true;
+        settings = ../.config/noctalia/config.toml;
       };
-      # Keep a leaking shell from exhausting swap and wedging the whole host.
-      # The normal post-startup peak is just under 1 GiB; see incident #8.
-      systemd.user.services.noctalia-shell.Service = {
+      # Noctalia v5 writes settings UI changes to its XDG state directory.
+      # Keep that file mutable and Git-visible, as with the v4 settings.json.
+      home.file.".local/state/noctalia/settings.toml" = {
+        source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dev/nixos-config/.config/noctalia/settings.toml";
+        force = true;
+      };
+      # Retain containment while evaluating the v5 beta. The native v5 runtime
+      # should use substantially less memory than the old Quickshell service.
+      systemd.user.services.noctalia.Service = {
         MemoryHigh = "1536M";
         MemoryMax = "2G";
         MemorySwapMax = "512M";
       };
-      stylix.targets.noctalia-shell.enable = false; # https://github.com/noctalia-dev/noctalia-shell/pull/1324#issuecomment-3747399960
 
       # programs.fuzzel.enable = true;
       programs.fzf.enable = true;

@@ -1,0 +1,151 @@
+# Noctalia v5 test configuration. The v4 settings.json and plugins.json files
+# remain alongside this file so rolling back to v4 does not lose any settings.
+
+[accessibility]
+ui_scale = 1.0
+high_contrast = false
+
+[shell]
+font_family = "DejaVu Sans"
+telemetry_enabled = false
+settings_show_advanced = true
+show_location = true
+clipboard_enabled = false
+
+[shell.animation]
+enabled = false
+speed = 2.0
+
+[shell.shadow]
+direction = "down"
+alpha = 0.55
+
+[shell.panel]
+transparency_mode = "solid"
+borders = true
+shadow = true
+launcher_placement = "floating"
+clipboard_placement = "floating"
+control_center_placement = "attached"
+wallpaper_placement = "attached"
+session_placement = "attached"
+launcher_position = "center"
+
+[wallpaper]
+enabled = false
+directory = "/home/skainswo/Pictures/Wallpapers"
+fill_mode = "crop"
+transition = ["disc"]
+transition_duration = 1500
+edge_smoothness = 0.05
+transition_on_startup = false
+
+[theme]
+mode = "dark"
+source = "builtin"
+builtin = "Gruvbox"
+pure_black_dark = false
+
+[notification]
+enable_daemon = true
+show_app_name = true
+show_actions = true
+layer = "overlay"
+background_opacity = 1.0
+
+[osd]
+position = "top_right"
+orientation = "horizontal"
+background_opacity = 1.0
+
+[osd.kinds]
+volume = false
+brightness = false
+wifi = true
+bluetooth = true
+power_profile = true
+caffeine = true
+nightlight = true
+dnd = true
+lock_keys = true
+keyboard_layout = true
+privacy = true
+
+[lockscreen]
+enabled = true
+blurred_desktop = false
+blur_intensity = 0.0
+tint_intensity = 0.0
+
+[system.monitor]
+enabled = true
+
+[battery]
+warning_threshold = 20
+
+[weather]
+enabled = true
+refresh_minutes = 30
+unit = "fahrenheit"
+effects = true
+
+[location]
+auto_locate = false
+address = "New York, NY"
+
+[audio]
+enable_overdrive = false
+enable_sounds = false
+sound_volume = 0.5
+
+[brightness]
+enable_ddcutil = false
+
+[nightlight]
+enabled = true
+force = false
+temperature_day = 6500
+temperature_night = 1550
+
+# Swayidle remains responsible for lock and display-power timeouts.
+[idle.behavior.lock]
+timeout = 600
+action = "lock"
+enabled = false
+
+[idle.behavior.screen-off]
+timeout = 660
+action = "screen_off"
+enabled = false
+
+[bar.main]
+position = "top"
+thickness = 34
+background_opacity = 1.0
+radius = 12
+margin_ends = 0
+margin_edge = 0
+padding = 8
+widget_spacing = 6
+scale = 1.0
+shadow = true
+auto_hide = false
+reserve_space = true
+capsule = false
+
+start = ["control-center", "cpu_usage", "cpu_temp", "ram_used"]
+center = ["workspaces"]
+end = ["tray", "notifications", "volume", "brightness", "battery", "bluetooth", "network", "clock"]
+
+[widget.workspaces]
+hide_when_empty = true
+show_labels = false
+style = "regular"
+pill_scale = 0.6
+focused_color = "primary"
+occupied_color = "secondary"
+empty_color = "secondary"
+
+[widget.clock]
+format = "{:%a %b %d %I:%M %p}"
+tooltip_format = "{:%Y-%m-%d}"
