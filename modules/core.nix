@@ -277,6 +277,7 @@ in
     "recursive-nix"
   ];
   nix.gc.automatic = true;
+  nix.gc.options = "--delete-older-than 30d";
 
   users.mutableUsers = false;
   users.users.skainswo = {
