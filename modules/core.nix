@@ -565,6 +565,7 @@ in
       programs.htop.enable = true;
       programs.jujutsu = {
         enable = true;
+        settings.ui.default-command = "log";
         settings.user = {
           name = "Samuel Ainsworth";
           email = "skainsworth@gmail.com";
