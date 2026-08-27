@@ -158,6 +158,32 @@ in
 
   security.polkit.enable = true;
 
+  # Patch niri with niri-wm/niri#4485 ("Clean up layer surfaces when removing
+  # outputs", fixes niri-wm/niri#1457). Without it, removing an output before a
+  # layer-shell client destroys its per-output surface leaks one MappedLayer +
+  # its imported DMA-BUF forever — ~39-86 MiB per lid-close/output-reconnect
+  # cycle on this hardware; a 16-day session accumulated ~12 GiB (see
+  # samuela/nixos-config#10 for the postmortem). The patch is the exact commit
+  # (ecb95377) validated by the matched A/B VM measurement linked from the PR;
+  # it applies cleanly to the 26.04 tree (only a line offset in src/niri.rs).
+  # Remove this overlay once a niri release containing the fix lands in the
+  # nixos-26.05 channel (niri > 26.04).
+  nixpkgs.overlays = [
+    (_final: prev: {
+      niri =
+        assert prev.niri.version == "26.04"
+          || throw "nixpkgs niri is ${prev.niri.version}; revisit the niri#4485 leak-patch overlay";
+        prev.niri.overrideAttrs (old: {
+          patches = (old.patches or [ ]) ++ [
+            (prev.fetchpatch {
+              url = "https://github.com/niri-wm/niri/commit/ecb953778c1031d0492cc6bc65429449cb32163c.patch";
+              hash = "sha256-LiNKTPgNQRfRfv/1bNQT698AUdj1qsSadiKugbmeoBE=";
+            })
+          ];
+        });
+    })
+  ];
+
   programs.niri.enable = true;
   # GDM defaults to "gnome-session" when no session is selected and the
   # user's AccountsService record doesn't pin one; on this host that just
