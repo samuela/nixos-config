@@ -133,6 +133,61 @@ def readTrimLower? (path : FilePath) : IO (Option String) := do
   catch _ =>
     return none
 
+/--
+Whether the firmware reports the laptop lid as closed.
+
+An unknown lid state deliberately returns `none`: callers must not apply the
+closed-lid policy unless they can positively identify a closed lid.
+-/
+def lidClosed? : IO (Option Bool) := do
+  let root := FilePath.mk "/proc/acpi/button/lid"
+  try
+    for entry in ← root.readDir do
+      match ← readTrimLower? (entry.path / "state") with
+      | some state =>
+          if state.endsWith "closed" then
+            return some true
+          if state.endsWith "open" then
+            return some false
+      | none => pure ()
+    return none
+  catch _ =>
+    return none
+
+def isInternalDisplayConnector (name : String) : Bool :=
+  let parts := name.splitOn "-"
+  parts.contains "edp" || parts.contains "lvds" || parts.contains "dsi"
+
+/--
+Whether DRM reports a connected external display.
+
+Like `lidClosed?`, failure returns `none`. The undocked override is intentionally
+fail-safe: missing or unreadable DRM state preserves the normal blocker policy.
+-/
+def externalDisplayConnected? : IO (Option Bool) := do
+  let root := FilePath.mk "/sys/class/drm"
+  try
+    let mut sawConnector := false
+    for entry in ← root.readDir do
+      let connector := entry.fileName.map Char.toLower
+      let statusPath := entry.path / "status"
+      if ← statusPath.pathExists then
+        sawConnector := true
+        match ← readTrimLower? statusPath with
+        | some "connected" =>
+            if !isInternalDisplayConnector connector then
+              return some true
+        | some _ => pure ()
+        | none => return none
+    if sawConnector then return some false else return none
+  catch _ =>
+    return none
+
+def closedAndUndocked : IO Bool := do
+  match ← lidClosed?, ← externalDisplayConnected? with
+  | some true, some false => return true
+  | _, _ => return false
+
 def stateDir : IO FilePath := do
   let some dir ← IO.getEnv "XDG_RUNTIME_DIR" | panic! "XDG_RUNTIME_DIR is not set"
   return FilePath.mk dir / "smart-suspend"
@@ -240,15 +295,20 @@ def batteryPercent? : IO (Option Nat) := do
 /--
 Why sleep is being deferred.
 
-External power is deliberately never overridden: while plugged in the battery is
-not at risk and staying awake is the intended behaviour. Every other blocker is
-overridable by the battery floor or the deferral cap.
+For open-lid and docked sessions, external power is deliberately never
+overridden: while plugged in the battery is not at risk and staying awake is the
+intended behaviour. The closed-and-undocked policy is applied before blockers
+are constructed. Every other blocker is overridable by the battery floor or the
+deferral cap.
 -/
 inductive Blocker where
   | externalPower (supplies : String)
   | overridable (reason : String)
 
 def blocker? : IO (Option Blocker) := do
+  if ← closedAndUndocked then
+    log "eligibility checks passed: lid closed and no external display; ignoring power and audio blockers"
+    return none
   let onlineSupplies ← onlinePowerSupplies
   if !onlineSupplies.isEmpty then
     return some (.externalPower (String.intercalate ", " onlineSupplies))

@@ -253,10 +253,10 @@ in
     '';
   };
 
-  # Ignore lid switch events and let swayidle's smart-suspend handle suspension.
-  # This allows smart-suspend to check power state and audio activity before suspending.
-  # Behavior: closing lid on AC power won't suspend, closing on battery will suspend
-  # after swayidle's 5-minute inactivity timeout (unless audio is active).
+  # Ignore logind's lid action and let swayidle's smart-suspend handle suspension.
+  # After the 5-minute inactivity timeout, a closed lid with no external display
+  # suspends regardless of power or audio state. Open-lid and docked sessions keep
+  # the normal power and audio blockers so playback, calls, and AC use stay awake.
   services.logind.settings.Login.HandleLidSwitch = "ignore";
 
   # Turn internal screen off/on when lid is closed/opened. This is separate from
