@@ -458,6 +458,7 @@ in
         unstable-pkgs.gemini-cli
         unstable-pkgs.gurk-rs # Using unstable due to https://github.com/boxdot/gurk-rs/issues/462
         unstable-pkgs.mkchromecast
+	unstable-pkgs.pi-coding-agent
         unstable-pkgs.vscode
         # unstable-pkgs.crush # https://github.com/NixOS/nixpkgs/issues/470068
 
