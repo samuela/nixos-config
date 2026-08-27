@@ -74,6 +74,9 @@ widget_order = [ "lockscreen-login-box@DP-3", "lockscreen-login-box@eDP-1" ]
         show_unlock_hint = true
         show_weather = true
 
+[osd.kinds]
+media = false
+
 [shell]
 telemetry_enabled = true
 
