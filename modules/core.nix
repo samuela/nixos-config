@@ -17,6 +17,11 @@ let
   # Use Noctalia's pinned nixpkgs so its binary cache remains available.
   noctalia = import noctaliaSrc { };
 
+  macOSTerminalBell = pkgs.fetchurl {
+    url = "https://github.com/extratone/macOSsystemsounds/raw/main/aiff/Tink.aiff";
+    hash = "sha256-tjTpwDvc5BNTOlH8MtimMbOahiGx7o+asYJbbKBDFwI=";
+  };
+
   # Tracking nixpkgs master branch. Last updated 2026-07-26.
   unstable-nixpkgs-src = builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/d7949fe81b1240d2452fef4b67aeda455f00cd25.tar.gz";
@@ -488,6 +493,10 @@ in
       programs.alacritty = {
         enable = true;
         settings = {
+          bell.command = {
+            program = "${pkgs.pipewire}/bin/pw-play";
+            args = [ "${macOSTerminalBell}" ];
+          };
           window = {
             blur = true;
             decorations = "none";
