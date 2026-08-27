@@ -189,6 +189,19 @@ in
   # user's AccountsService record doesn't pin one; on this host that just
   # produces a login loop (no GNOME installed). Pin niri explicitly.
   services.displayManager.defaultSession = "niri";
+
+  # Cap total cgroup memory (niri + all its spawned children) so a future
+  # leak trips before exhausting swap and wedging the host (see incident #8
+  # for the noctalia precedent and #10 for the 12 GiB niri-layer leak). 8 GiB
+  # gives generous headroom for a browser + compositor + terminals while still
+  # catching a leak much earlier than swap exhaustion. Children count toward
+  # this limit, so it only protects against leaks — not against genuine heavy
+  # workloads on their own.
+  systemd.user.services.niri.serviceConfig = {
+    MemoryMax = "8G";
+    MemorySwapMax = "512M";
+  };
+
   services.flatpak.enable = true;
 
   # Enable networking
