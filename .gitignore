@@ -1,6 +1,9 @@
 # Secrets and sensitive artifacts
 secrets/
 
+# Noctalia runtime state (auto-generated, overwritten on every restart)
+.config/noctalia/settings.toml
+
 # Build products / symlinks
 result
 

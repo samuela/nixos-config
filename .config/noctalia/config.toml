@@ -7,7 +7,7 @@ high_contrast = false
 
 [shell]
 font_family = "DejaVu Sans"
-telemetry_enabled = false
+telemetry_enabled = true
 settings_show_advanced = true
 show_location = true
 clipboard_enabled = false
@@ -24,6 +24,7 @@ alpha = 0.55
 transparency_mode = "solid"
 borders = true
 shadow = true
+open_near_click_control_center = true
 launcher_placement = "floating"
 clipboard_placement = "floating"
 control_center_placement = "attached"
@@ -32,7 +33,7 @@ session_placement = "attached"
 launcher_position = "center"
 
 [wallpaper]
-enabled = false
+enabled = true
 directory = "/home/skainswo/Pictures/Wallpapers"
 fill_mode = "crop"
 transition = ["disc"]
@@ -40,10 +41,19 @@ transition_duration = 1500
 edge_smoothness = 0.05
 transition_on_startup = false
 
+    [wallpaper.default]
+    path = "/home/skainswo/Pictures/Wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg"
+
+    [wallpaper.last]
+    path = "/home/skainswo/Pictures/Wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg"
+
+    [wallpaper.monitors.eDP-1]
+    path = "/home/skainswo/Pictures/Wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg"
+
 [theme]
 mode = "dark"
 source = "builtin"
-builtin = "Gruvbox"
+builtin = "Nord"
 pure_black_dark = false
 
 [notification]
@@ -61,6 +71,7 @@ background_opacity = 1.0
 [osd.kinds]
 volume = false
 brightness = false
+media = false
 wifi = true
 bluetooth = true
 power_profile = true
@@ -90,7 +101,7 @@ unit = "fahrenheit"
 effects = true
 
 [location]
-auto_locate = false
+auto_locate = true
 address = "New York, NY"
 
 [audio]
@@ -106,6 +117,11 @@ enabled = true
 force = false
 temperature_day = 6500
 temperature_night = 1550
+
+[dock]
+enabled = true
+reserve_space = false
+smart_auto_hide = true
 
 # Swayidle remains responsible for lock and display-power timeouts.
 [idle.behavior.lock]
@@ -126,14 +142,14 @@ radius = 12
 margin_ends = 0
 margin_edge = 0
 padding = 8
-widget_spacing = 6
+widget_spacing = 12
 scale = 1.0
 shadow = true
 auto_hide = false
 reserve_space = true
 capsule = false
 
-start = ["control-center", "cpu_usage", "cpu_temp", "ram_used"]
+start = ["control-center", "cpu"]
 center = ["workspaces"]
 end = ["tray", "notifications", "volume", "brightness", "battery", "bluetooth", "network", "clock"]
 
@@ -149,3 +165,18 @@ empty_color = "secondary"
 [widget.clock]
 format = "{:%a %b %d %I:%M %p}"
 tooltip_format = "{:%Y-%m-%d}"
+
+[widget.battery]
+show_label = false
+
+[widget.brightness]
+show_label = false
+
+[widget.cpu]
+show_value = false
+
+[widget.network]
+show_label = false
+
+[widget.volume]
+show_label = false

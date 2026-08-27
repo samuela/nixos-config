@@ -570,12 +570,6 @@ in
         systemd.enable = true;
         settings = ../.config/noctalia/config.toml;
       };
-      # Noctalia v5 writes settings UI changes to its XDG state directory.
-      # Keep that file mutable and Git-visible, as with the v4 settings.json.
-      home.file.".local/state/noctalia/settings.toml" = {
-        source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/dev/nixos-config/.config/noctalia/settings.toml";
-        force = true;
-      };
       # Retain containment while evaluating the v5 beta. The native v5 runtime
       # should use substantially less memory than the old Quickshell service.
       systemd.user.services.noctalia.Service = {
