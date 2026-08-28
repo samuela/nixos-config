@@ -481,6 +481,7 @@ in
         unstable-pkgs.claude-code
         unstable-pkgs.codex
         unstable-pkgs.gemini-cli
+        unstable-pkgs.hunk
         unstable-pkgs.gurk-rs # Using unstable due to https://github.com/boxdot/gurk-rs/issues/462
         unstable-pkgs.mkchromecast
 	unstable-pkgs.pi-coding-agent
@@ -604,6 +605,7 @@ in
         # gitFull builds git-send-email with the SMTP/TLS Perl modules
         # (IO::Socket::SSL, Authen::SASL) that plain pkgs.git omits.
         package = pkgs.gitFull;
+        settings.core.pager = "hunk pager";
         settings.user.email = "skainsworth@gmail.com";
         settings.user.name = "Samuel Ainsworth";
         # Outgoing mail for `git send-email` (e.g. kernel patches). The SMTP
@@ -622,6 +624,8 @@ in
         enable = true;
         package = jujutsuPackage;
         settings.ui.default-command = "log";
+        settings.ui.diff-formatter = ":git";
+        settings.ui.pager = [ "hunk" "pager" ];
         settings.user = {
           name = "Samuel Ainsworth";
           email = "skainsworth@gmail.com";
