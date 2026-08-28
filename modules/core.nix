@@ -3,6 +3,18 @@
 { config, pkgs, ... }:
 
 let
+  # Official Jujutsu flake, pinned to the v0.44.0 release commit.
+  jujutsuFlake = builtins.getFlake "github:jj-vcs/jj/af45d57de7163cc5f17f3df178a31577e4951ea3";
+  jujutsuPackage =
+    jujutsuFlake.packages.${pkgs.stdenv.hostPlatform.system}.jujutsu.overrideAttrs (old: {
+      # v0.44.0 has one nondeterministic test that assumes a stable graph
+      # adjacency order. The other 3,315 tests passed in the failed build.
+      checkFlags = (old.checkFlags or [ ]) ++ [
+        "--skip"
+        "test_converge::test_build_truncated_evolution_graph"
+      ];
+    });
+
   # Tracking release-26.05 branch. Last updated 2026-06-05
   home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/e28654b71096e08c019d4861ca26acb646f583d8.tar.gz";
 
@@ -608,6 +620,7 @@ in
       programs.htop.enable = true;
       programs.jujutsu = {
         enable = true;
+        package = jujutsuPackage;
         settings.ui.default-command = "log";
         settings.user = {
           name = "Samuel Ainsworth";
