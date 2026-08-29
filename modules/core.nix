@@ -623,6 +623,7 @@ in
       programs.jujutsu = {
         enable = true;
         package = jujutsuPackage;
+        settings.revsets.log = "(trunk()..@) | descendants(@, 5)";
         settings.ui.default-command = "log";
         settings.ui.diff-formatter = ":git";
         settings.ui.pager = [ "hunk" "pager" ];
