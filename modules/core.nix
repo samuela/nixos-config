@@ -35,10 +35,10 @@ let
     hash = "sha256-tjTpwDvc5BNTOlH8MtimMbOahiGx7o+asYJbbKBDFwI=";
   };
 
-  # Tracking nixpkgs master branch. Last updated 2026-07-26.
+  # Tracking nixpkgs master branch. Last updated 2026-08-30.
   unstable-nixpkgs-src = builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/d7949fe81b1240d2452fef4b67aeda455f00cd25.tar.gz";
-    sha256 = "sha256-l5FmH6o98w3jm8zre0UT1cjGDMudhtPq5KbNbLkiVgU=";
+    url = "https://github.com/NixOS/nixpkgs/archive/5aa3282f22543a9bc50dd2061a3dbd695eb924ca.tar.gz";
+    sha256 = "sha256-8tmfV+WS7wcChgr5HjJR16KGHmbwGuX1u4mW3iMGwvI=";
   };
 
   unstable-nixpkgs-patched = pkgs.applyPatches {
@@ -58,7 +58,7 @@ let
         +    hash = "sha256-37LZ10P+XGzfU3KVpRhfEElYscoUlE+zi85hmvicjLI=";
         @@ -29 +29 @@
         -  pnpmDepsHash = "sha256-eVyR8SVp0SyjflFomvgn9dgAqvXIUgjCYc5NICxxIg8=";
-        +  pnpmDepsHash = "sha256-KzGqNFKgfJBP0ZmVEOg6Z6qp/dULDNphtkZ6u8vMCpg=";
+        +  pnpmDepsHash = "sha256-/ou2Hoix9m/be6kq4Osg4gTTQQRTkL5uLOuERmevuQ0=";
         @@ -52 +52 @@
         -    pnpm build
         +    OPENCLAW_TSDOWN_MAX_OLD_SPACE_MB=8192 pnpm build
