@@ -3,19 +3,14 @@
 # Refresh `rev` with:
 #   curl -s 'https://status.nixos.org/prometheus/api/v1/query?query=channel_revision' \
 #     | jq -r '.data.result[] | select(.metric.channel=="nixos-26.05" and .metric.current=="1") | .metric.revision'
-# Last updated: 2026-06-05.
-# When bumping this pin, update this date too.
-#
-# 2026-06-05: temporarily pinned to release-26.05 HEAD (not the channel's
-# current snapshot) to pick up the backport of NixOS/nixpkgs#523948 which
-# fixes GDM 50 sessions failing to launch on NixOS (login loop) — the
-# channel snapshot is 49 commits behind that fix. Switch back to the
-# channel revision the next time the channel ticks past 7fdb15681cb.
+# Last updated: 2026-08-30.
+# When bumping this pin, update this date and recompute the unpacked tarball
+# hash with `nix-prefetch-url --unpack`.
 let
-  rev = "35d351cdbd653bbe8f523b7fc6b901fc272ec75d";
+  rev = "c5c4a43b0e8056328ec4529f735cabdb8f1942bb";
 in
 {
   inherit rev;
-  sha256 = "0viiyqc5m4ay9fr91yvg8qz5axk9vv28bvhmkalyvd3vbqa72ixs";
+  sha256 = "0miz2qn3lamkpqyjbfmz93h4icr323ds7l218vvsgq206razvb5v";
   url = "https://github.com/NixOS/nixpkgs/archive/${rev}.tar.gz";
 }

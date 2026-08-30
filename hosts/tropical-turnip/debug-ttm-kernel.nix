@@ -56,30 +56,11 @@ in
         };
       }
       {
-        # Linux 7.0.11 differs from Thomas's patch context by one space in a
-        # comment. Without this no-op normalization, GNU patch mistakes the
-        # first ttm_resource.c hunk for an already-applied/reversed patch.
-        name = "ttm-7.0.11-patchwork-context";
-        patch = ./ttm-7.0.11-patchwork-context.patch;
-      }
-      {
-        # ===================================================================
-        # ONE debug kernel at a time -- pick exactly one of the two patches
-        # below (ESP space is tight; two debug specs won't both fit).
-        #
-        #   Thomas's nested-sublists v2 -> the FIX. Pass criterion: run
-        #       `~/ttm-trigger.sh hib N` (or `load SECS`) and KASAN/DEBUG_LIST/
-        #       lockdep stay SILENT. This is the validation kernel.
-        #
-        #   ttm-dangle-detector.patch -> still BUGGY, plus WARN_ONCE probes that
-        #       fire at PLANT time. Boot this first to PROVE the trigger is
-        #       reached: `~/ttm-trigger.sh hib 1` should print a "TTM#5387: ..."
-        #       PLANT within one load-across-hibernate cycle. Then flip back to
-        #       the fix patch, rebuild, and confirm the same workload is silent.
-        # ===================================================================
+        # Thomas's nested-sublists v2 fix. Pass criterion: run
+        # `~/ttm-trigger.sh hib N` (or `load SECS`) and confirm KASAN,
+        # DEBUG_LIST, and lockdep stay silent.
         name = "ttm-5387-nested-sublists-v2";
-        patch = ttmNestedSublistsV2; # Exact upstream v2; validate it stays KASAN-silent under the proven trigger
-        # patch = ./ttm-dangle-detector.patch; # DETECTOR: buggy + loud, to PROVE the trigger
+        patch = ttmNestedSublistsV2;
       }
     ];
   };

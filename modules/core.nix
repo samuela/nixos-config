@@ -6,14 +6,15 @@ let
   # Official Jujutsu flake, pinned to the v0.44.0 release commit.
   jujutsuFlake = builtins.getFlake "github:jj-vcs/jj/af45d57de7163cc5f17f3df178a31577e4951ea3";
   jujutsuPackage =
-    jujutsuFlake.packages.${pkgs.stdenv.hostPlatform.system}.jujutsu.overrideAttrs (old: {
-      # v0.44.0 has one nondeterministic test that assumes a stable graph
-      # adjacency order. The other 3,315 tests passed in the failed build.
-      checkFlags = (old.checkFlags or [ ]) ++ [
-        "--skip"
-        "test_converge::test_build_truncated_evolution_graph"
-      ];
-    });
+    jujutsuFlake.packages.${pkgs.stdenv.hostPlatform.system}.jujutsu.overrideAttrs
+      (old: {
+        # v0.44.0 has one nondeterministic test that assumes a stable graph
+        # adjacency order. The other 3,315 tests passed in the failed build.
+        checkFlags = (old.checkFlags or [ ]) ++ [
+          "--skip"
+          "test_converge::test_build_truncated_evolution_graph"
+        ];
+      });
 
   # Tracking release-26.05 branch. Last updated 2026-06-05
   home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/e28654b71096e08c019d4861ca26acb646f583d8.tar.gz";
@@ -122,26 +123,6 @@ let
       fi
     '';
   };
-
-  # Includes Supreeeme/xwayland-satellite#387, which fixes a panic when all
-  # outputs are disconnected. Without this, niri's xwayland-satellite exits
-  # with status 101 on lid-close/no-output transitions and kills X11 clients.
-  xwayland-satellite-fixed = pkgs.xwayland-satellite.overrideAttrs (
-    finalAttrs: _old: {
-      version = "0.8.1-unstable-2026-06-12";
-      src = pkgs.fetchFromGitHub {
-        owner = "Supreeeme";
-        repo = "xwayland-satellite";
-        rev = "8575d0ef55d70f9b4c46b6bffb3accf912217e1e";
-        hash = "sha256-28696iIw8uE0ZUyFTtzhEM8xMh85clCYypMxkvUi+sc=";
-      };
-      cargoHash = "sha256-jbEihJYcOwFeDiMYlOtaS8GlunvSze80iWahDj1qDrs=";
-      cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
-        inherit (finalAttrs) pname version src;
-        hash = finalAttrs.cargoHash;
-      };
-    }
-  );
 in
 {
   _module.args.unstableNixpkgsSrc = unstable-nixpkgs-patched;
@@ -156,17 +137,7 @@ in
   boot.loader.systemd-boot.enable = true;
   boot.loader.timeout = 1;
 
-  # Keep fwupd available for explicit firmware maintenance, but do not run the
-  # metadata refresh timer automatically. The timer runs `fwupdmgr refresh` as
-  # the fwupd-refresh service user; with fwupd 2.1.4 that non-interactive
-  # refresh can fail Polkit auth for org.freedesktop.fwupd.refresh-remote and
-  # leave fwupd-refresh.service failed, which then breaks rebuild switching.
-  # See https://github.com/NixOS/nixpkgs/issues/530906.
-  # Mask the timer and its oneshot service; manual fwupdmgr use does not need
-  # either unit.
   services.fwupd.enable = true;
-  systemd.services.fwupd-refresh.enable = false;
-  systemd.timers.fwupd-refresh.enable = false;
 
   security.polkit.enable = true;
 
@@ -183,7 +154,8 @@ in
   nixpkgs.overlays = [
     (_final: prev: {
       niri =
-        assert prev.niri.version == "26.04"
+        assert
+          prev.niri.version == "26.04"
           || throw "nixpkgs niri is ${prev.niri.version}; revisit the niri#4485 leak-patch overlay";
         prev.niri.overrideAttrs (old: {
           patches = (old.patches or [ ]) ++ [
@@ -482,9 +454,9 @@ in
         unstable-pkgs.codex
         unstable-pkgs.gemini-cli
         unstable-pkgs.hunk
-        unstable-pkgs.gurk-rs # Using unstable due to https://github.com/boxdot/gurk-rs/issues/462
+        gurk-rs
         unstable-pkgs.mkchromecast
-	unstable-pkgs.pi-coding-agent
+        unstable-pkgs.pi-coding-agent
         unstable-pkgs.vscode
         # unstable-pkgs.crush # https://github.com/NixOS/nixpkgs/issues/470068
 
@@ -509,7 +481,7 @@ in
         swaybg # used in spawn-at-startup by niri config
         swayosd # used in keyboard bindings in niri config. for some reason services.swayosd doesn't add it to PATH
         walker # see services.walker below
-        xwayland-satellite-fixed # For steam and other X11 applications. See https://discourse.nixos.org/t/how-to-do-xwayland-on-nixos/57825/11?u=samuela.
+        xwayland-satellite # For steam and other X11 applications. See https://discourse.nixos.org/t/how-to-do-xwayland-on-nixos/57825/11?u=samuela.
       ]
       # used by rust-analyzer vsocde extension
       # ++ [
@@ -626,7 +598,10 @@ in
         settings.revsets.log = "(trunk()..@) | descendants(@, 5)";
         settings.ui.default-command = "log";
         settings.ui.diff-formatter = ":git";
-        settings.ui.pager = [ "hunk" "pager" ];
+        settings.ui.pager = [
+          "hunk"
+          "pager"
+        ];
         settings.user = {
           name = "Samuel Ainsworth";
           email = "skainsworth@gmail.com";
@@ -669,9 +644,6 @@ in
 
       programs.vicinae = {
         enable = true;
-        # Override the release-channel package because it lags upstream and
-        # misses newer Vicinae features like script commands.
-        package = unstable-pkgs.vicinae;
         systemd.enable = true;
       };
       stylix.targets.vicinae.enable = false;

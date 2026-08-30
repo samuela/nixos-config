@@ -90,7 +90,7 @@ in
     ../../modules/core.nix
     ../../modules/oom-mitigations.nix
     ../../modules/restic-backup.nix
-    ./debug-ttm-kernel.nix # adds a "debug-ttm" boot entry (KASAN/lockdep/kunit) for drm/amd #5387
+    ./debug-ttm-kernel.nix # adds a "debug-ttm" boot entry (KASAN/lockdep) for drm/amd #5387
 
   ];
 
