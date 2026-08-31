@@ -383,6 +383,8 @@ in
         gc = "git commit -m";
         gd = "git diff";
         gs = "git status";
+        hs = "hunk show";
+        jje = "jj edit";
         ls = "eza --icons=always";
         nd = "nix develop";
         nixpkgs-version = "nix-instantiate --eval -E '(import <nixpkgs> {}).lib.version'";
