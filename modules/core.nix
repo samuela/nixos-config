@@ -406,7 +406,8 @@ in
       stylix.image = ../Wallpapers/john-towner-JgOeRuGD_Y4-unsplash.jpg;
       stylix.polarity = "dark";
       stylix.base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-dark-hard.yaml";
-      stylix.opacity.terminal = 0.9;
+      # Fully opaque; disables terminal transparency.
+      stylix.opacity.terminal = 1.0;
       stylix.fonts = {
         serif = {
           package = pkgs.dejavu_fonts;
@@ -526,7 +527,7 @@ in
             args = [ "${macOSTerminalBell}" ];
           };
           window = {
-            blur = true;
+            blur = false;
             decorations = "none";
           };
         };
