@@ -9,3 +9,6 @@ result
 
 # build-vm images
 *.qcow2
+
+# Jujutsu metadata (colocated repo)
+.jj/
