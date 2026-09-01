@@ -417,12 +417,9 @@ in
           name = "DejaVu Sans";
         };
         # Monospace font for terminals and shell UI.
-        # Note: In some cases it is necessary to run `fc-cache -f` to refresh
-        # the font cache. This should be handled by nixos-rebuild switch, but as
-        # 2026-01-21 this is not always the case.
         monospace = {
-          package = pkgs.nerd-fonts.dejavu-sans-mono;
-          name = "DejaVu Sans Mono";
+          package = pkgs.nerd-fonts.jetbrains-mono;
+          name = "JetBrainsMono Nerd Font";
         };
         emoji = {
           package = pkgs.noto-fonts-color-emoji;
@@ -430,6 +427,10 @@ in
         };
         sizes.terminal = 18;
       };
+
+      # Pre-generate caches for fonts installed through Home Manager. Without
+      # this, Fontconfig can reuse stale caches when the profile changes.
+      fonts.fontconfig.enable = true;
 
       # Necessary for pkexec to work in VSCode, esp. "Retry as Sudo". See https://nixos.wiki/wiki/Polkit#Authentication_agents.
       systemd.user.services.polkit-gnome-authentication-agent-1 = {
