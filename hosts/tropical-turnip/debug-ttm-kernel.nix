@@ -35,10 +35,21 @@ let
     url = "https://patchwork.freedesktop.org/patch/740147/raw/";
     hash = "sha256-3NKCSlg1dEFFVtw/162VcYm3yywYHtDD8SeryB5ajzw=";
   };
+
+  llvmLatestKernelPackages = pkgs.linuxPackagesFor (
+    pkgs.linuxPackages_latest.kernel.override {
+      stdenv = pkgs.pkgsLLVM.stdenv;
+    }
+  );
 in
 {
   specialisation.debug-ttm.configuration = {
     system.nixos.tags = [ "debug-ttm" ];
+
+    # Linux 7.2 requires Clang when combining KASAN with Rust support.
+    # Keep the normal kernel on GCC and use the complete LLVM toolchain only
+    # for this instrumented specialisation.
+    boot.kernelPackages = lib.mkForce llvmLatestKernelPackages;
 
     boot.kernelPatches = [
       {
@@ -48,7 +59,7 @@ in
           # --- catch the corruption ---
           DEBUG_KERNEL = yes;
           DEBUG_LIST = yes;
-          KASAN = yes; # generic/outline KASAN (lighter to build than INLINE)
+          KASAN = yes; # generic KASAN; Clang currently selects inline instrumentation
 
           # --- lock correctness on the bulk_move / lru_lock path ---
           PROVE_LOCKING = yes;
