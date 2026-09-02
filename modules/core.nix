@@ -22,10 +22,13 @@ let
   # Tracking release-26.05 branch. Last updated 2026-06-05
   stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/aacc65706d523528aed81f55c2c780aaeb541d55.tar.gz";
 
-  # Pinned to Noctalia v5.0.0-beta.8. Last updated 2026-08-23.
+  # Pinned to Noctalia v5.0.0-beta.9. Last updated 2026-09-02.
+  # beta.9 fixes a beta.8 regression that crashed the shell when an output
+  # reappeared after a lock was deferred while the compositor was headless
+  # (noctalia-dev/noctalia#3868).
   noctaliaSrc = builtins.fetchTarball {
-    url = "https://github.com/noctalia-dev/noctalia/archive/refs/tags/v5.0.0-beta.8.tar.gz";
-    sha256 = "sha256-qy3Cheg/FQ9ZaBPTIgdq4IkmkNtC6XBpmtC8nT+wU/Y=";
+    url = "https://github.com/noctalia-dev/noctalia/archive/refs/tags/v5.0.0-beta.9.tar.gz";
+    sha256 = "sha256-O07tHqxugZ/XE/90kx/UCZ0YCbHSI88v2ct2ezuCKi4=";
   };
   # Use Noctalia's pinned nixpkgs so its binary cache remains available.
   noctalia = import noctaliaSrc { };
