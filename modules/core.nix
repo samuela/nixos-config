@@ -77,6 +77,16 @@ let
     config.allowUnfree = true;
   };
 
+  # Tracking nixpkgs master for Pi only. Last updated 2026-09-06.
+  # Pi 0.85.0 supplies chord for pi-subagents; leave the other tools' pin intact.
+  pi-nixpkgs-src = builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/0bb96917c7a6f4df4a572dab6e584c67394a7f65.tar.gz";
+    sha256 = "sha256-clWewmvdMehe7RLA+/Z2xC4lYHuZIKb6MhmxTrV3gGQ=";
+  };
+  pi-pkgs = import pi-nixpkgs-src {
+    inherit (pkgs.stdenv.hostPlatform) system;
+  };
+
   tmuxAgentStatus = pkgs.writeShellApplication {
     name = "tmux-agent-status";
     runtimeInputs = with pkgs; [
@@ -463,7 +473,7 @@ in
         unstable-pkgs.hunk
         gurk-rs
         unstable-pkgs.mkchromecast
-        unstable-pkgs.pi-coding-agent
+        pi-pkgs.pi-coding-agent
         unstable-pkgs.vscode
         # unstable-pkgs.crush # https://github.com/NixOS/nixpkgs/issues/470068
 
