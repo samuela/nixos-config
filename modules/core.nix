@@ -44,36 +44,31 @@ let
     sha256 = "sha256-8tmfV+WS7wcChgr5HjJR16KGHmbwGuX1u4mW3iMGwvI=";
   };
 
-  unstable-nixpkgs-patched = pkgs.applyPatches {
-    name = "nixpkgs-master-with-openclaw-2026.7.1";
-    src = unstable-nixpkgs-src;
+  # OpenClaw alone follows the pnpm 12 prerequisite and the exact published
+  # update commit. Keep the shared unstable package set on its existing pin.
+  openclaw-nixpkgs-base = builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/e97c70d3e2e777ddff111564204bdb9f1edfa827.tar.gz";
+    sha256 = "sha256-3ZsSU6bgN9OF0kuMbeNddPY07+VqPLwMxO+mNu1qZBw=";
+  };
+  openclaw-nixpkgs-src = pkgs.applyPatches {
+    name = "nixpkgs-pnpm-12-with-openclaw-2026.9.2";
+    src = openclaw-nixpkgs-base;
     patches = [
-      # Nixpkgs currently carries 2026.6.33; package the latest stable release.
-      # Drop once nixpkgs updates OpenClaw to 2026.7.1 or newer.
-      (pkgs.writeText "openclaw-2026.7.1.patch" ''
-        --- a/pkgs/by-name/op/openclaw/package.nix
-        +++ b/pkgs/by-name/op/openclaw/package.nix
-        @@ -13 +13 @@
-        -  version ? "2026.6.33",
-        +  version ? "2026.7.1",
-        @@ -26 +26 @@
-        -    hash = "sha256-OdH5olBLDGQYCtR2ElbzcQ2+Hgy3cZDixkIwmSPh9Xw=";
-        +    hash = "sha256-37LZ10P+XGzfU3KVpRhfEElYscoUlE+zi85hmvicjLI=";
-        @@ -29 +29 @@
-        -  pnpmDepsHash = "sha256-eVyR8SVp0SyjflFomvgn9dgAqvXIUgjCYc5NICxxIg8=";
-        +  pnpmDepsHash = "sha256-/ou2Hoix9m/be6kq4Osg4gTTQQRTkL5uLOuERmevuQ0=";
-        @@ -52 +52 @@
-        -    pnpm build
-        +    OPENCLAW_TSDOWN_MAX_OLD_SPACE_MB=8192 pnpm build
-        @@ -77 +77,3 @@
-             cp --reflink=auto -r package.json dist node_modules $libdir/
-        +    mkdir -p $libdir/packages
-        +    cp --reflink=auto -r packages/ai $libdir/packages/
-      '')
+      (builtins.fetchurl {
+        url = "https://github.com/samuela/nixpkgs/commit/7c6e462032fd06680de5c56e44694d8a53677e21.patch";
+        sha256 = "sha256-ElRA3zyZvEvobIfQJQ28b5EE6ZVDncbHWFM09gyFP+I=";
+      })
     ];
   };
+  openclaw-pkgs = import openclaw-nixpkgs-src {
+    inherit (pkgs.stdenv.hostPlatform) system;
+    config = {
+      allowUnfree = true;
+      permittedInsecurePackages = [ "openclaw-2026.9.2" ];
+    };
+  };
 
-  unstable-pkgs = import unstable-nixpkgs-patched {
+  unstable-pkgs = import unstable-nixpkgs-src {
     config.allowUnfree = true;
   };
 
@@ -138,7 +133,7 @@ let
   };
 in
 {
-  _module.args.unstableNixpkgsSrc = unstable-nixpkgs-patched;
+  _module.args.openclaw-pkgs = openclaw-pkgs;
   _module.args.unstablePkgs = unstable-pkgs;
 
   imports = [
