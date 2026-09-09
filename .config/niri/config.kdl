@@ -401,8 +401,8 @@ binds {
     Shift+XF86AudioRaiseVolume { spawn "bash" "-c" "swayosd-client --output-volume raise && pw-play ~/.local/share/sounds/volume_beep.aif"; }
     Shift+XF86AudioLowerVolume { spawn "bash" "-c" "swayosd-client --output-volume lower && pw-play ~/.local/share/sounds/volume_beep.aif"; }
 
-    XF86MonBrightnessDown { spawn "swayosd-client" "--brightness" "lower"; }
-    XF86MonBrightnessUp   { spawn "swayosd-client" "--brightness" "raise"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "swayosd-client" "--brightness" "lower"; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "swayosd-client" "--brightness" "raise"; }
 
     // Disable the "airplane" keyboard button. This is the right key and the spawn command does get run but it doesn't prevent the key from resulting in an rfkill.
     // XF86RFKill { spawn "swayosd-client" "--output-volume" "raise"; };
