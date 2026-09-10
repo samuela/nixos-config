@@ -564,6 +564,23 @@ in
 
       programs.noctalia = {
         enable = true;
+        # Retry transient fprintd authorization denials while the session is
+        # becoming active after resume (noctalia-dev/noctalia#3602).
+        # https://github.com/noctalia-dev/noctalia/pull/4365
+        # Backport only the runtime changes to beta.9; the PR's Meson/test
+        # changes target main. Remove once the pinned release includes the fix.
+        package = noctalia.package.overrideAttrs (old: {
+          patches = (old.patches or [ ]) ++ [
+            (pkgs.fetchpatch {
+              url = "https://github.com/noctalia-dev/noctalia/commit/9a84476906165208286399a85fe62d802d47da1a.patch";
+              hash = "sha256-s7ukWiCOOJO3IfZkGaStQ1cul3mxm/+Fk6+hKHxD8Kk=";
+              includes = [
+                "src/auth/fingerprint_authenticator.cpp"
+                "src/auth/fingerprint_authenticator.h"
+              ];
+            })
+          ];
+        });
         systemd.enable = true;
         settings = ../.config/noctalia/config.toml;
       };
