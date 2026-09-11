@@ -477,6 +477,7 @@ in
         apostrophe # default handler for markdown; see xdg.mimeApps below
         brave
 
+        cachix
         chromium
         clang # many rust libs require having a `cc`
         comma
