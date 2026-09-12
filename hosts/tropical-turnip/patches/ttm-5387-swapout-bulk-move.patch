@@ -1,0 +1,30 @@
+Subject: [PATCH] drm/ttm: fix swapped-out resources never leaving their bulk_move range
+
+Backport the net effect of the upstream fix and its application correction:
+  https://gitlab.freedesktop.org/drm/misc/kernel/-/commit/3db7d7d583419f7b1f2e141e36418802dbb25cf8
+  https://gitlab.freedesktop.org/drm/misc/kernel/-/commit/fcfe64715b425262af1b36f498f9197f3537ceed
+
+Upstream author: Vadim Nikitushkin <bub4z0r@gmail.com>
+Bug: https://gitlab.freedesktop.org/drm/amd/-/issues/5387
+
+The first commit accidentally changed the ttm_resource_try_charge() error
+check in ttm_bo_alloc_at_place(). The follow-up restores that check and
+changes the intended condition after ttm_tt_swapout(). Linux 7.2.2 has
+neither that allocation refactor nor the accidental change, so only the
+swapout hunk is needed here.
+
+ttm_tt_swapout() returns a positive page count on successful nonempty
+swapout, not zero. Remove the now-unevictable resource from its bulk_move
+range on success, avoiding dangling range endpoints when it is later freed.
+
+--- a/drivers/gpu/drm/ttm/ttm_bo.c
++++ b/drivers/gpu/drm/ttm/ttm_bo.c
+@@ -1178,7 +1178,7 @@
+ 
+ 	if (ttm_tt_is_populated(tt)) {
+ 		ret = ttm_tt_swapout(bdev, tt, swapout_walk->gfp_flags);
+-		if (!ret) {
++		if (ret > 0) {
+ 			spin_lock(&bdev->lru_lock);
+ 			ttm_resource_del_bulk_move_unevictable(bo->resource, bo);
+ 			ttm_resource_move_to_lru_tail(bo->resource);

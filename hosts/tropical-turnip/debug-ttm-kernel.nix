@@ -29,13 +29,6 @@
 
 { lib, pkgs, ... }:
 let
-  # Thomas Hellström's upstream v2 structural fix from drm/amd #5387.
-  # Patchwork: https://patchwork.freedesktop.org/patch/740147/
-  ttmNestedSublistsV2 = pkgs.fetchurl {
-    url = "https://patchwork.freedesktop.org/patch/740147/raw/";
-    hash = "sha256-3NKCSlg1dEFFVtw/162VcYm3yywYHtDD8SeryB5ajzw=";
-  };
-
   llvmLatestKernelPackages = pkgs.linuxPackagesFor (
     pkgs.linuxPackages_latest.kernel.override {
       stdenv = pkgs.pkgsLLVM.stdenv;
@@ -67,11 +60,14 @@ in
         };
       }
       {
-        # Thomas's nested-sublists v2 fix. Pass criterion: run
-        # `~/ttm-trigger.sh hib N` (or `load SECS`) and confirm KASAN,
-        # DEBUG_LIST, and lockdep stay silent.
-        name = "ttm-5387-nested-sublists-v2";
-        patch = ttmNestedSublistsV2;
+        # Backport the corrected upstream #5387 fix, replacing the experimental
+        # nested-sublists v2 patch. 3db7d7d58341 changed the wrong condition;
+        # fcfe64715b42 corrected it. See the patch header for both upstream links.
+        # Remove this backport once the pinned kernel includes the corrected fix.
+        # Pass criterion: run `~/ttm-trigger.sh hib N` (or `load SECS`) and
+        # confirm KASAN, DEBUG_LIST, and lockdep stay silent.
+        name = "ttm-5387-swapout-bulk-move";
+        patch = ./patches/ttm-5387-swapout-bulk-move.patch;
       }
     ];
   };
