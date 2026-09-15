@@ -72,11 +72,12 @@ let
     config.allowUnfree = true;
   };
 
-  # Tracking nixpkgs master for Pi only. Last updated 2026-09-06.
-  # Pi 0.85.0 supplies chord for pi-subagents; leave the other tools' pin intact.
+  # Tracking nixpkgs master for Pi only. Last updated 2026-09-15.
+  # Pi 0.85.1 removes experimental server imports that break the subagent SDK.
+  # Leave the system and other tools' nixpkgs pins intact.
   pi-nixpkgs-src = builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/0bb96917c7a6f4df4a572dab6e584c67394a7f65.tar.gz";
-    sha256 = "sha256-clWewmvdMehe7RLA+/Z2xC4lYHuZIKb6MhmxTrV3gGQ=";
+    url = "https://github.com/NixOS/nixpkgs/archive/209c4430f3b76831d9d436c7158d5712a210f9b2.tar.gz";
+    sha256 = "sha256-rg1HGwu7VnJutVIO3/WMrsKURHZHtjUu/QuBFH4s4YY=";
   };
   pi-pkgs = import pi-nixpkgs-src {
     inherit (pkgs.stdenv.hostPlatform) system;
