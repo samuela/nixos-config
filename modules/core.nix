@@ -265,6 +265,11 @@ in
   hardware.bluetooth.powerOnBoot = true;
   services.blueman.enable = true;
 
+  # DDC/CI control of external monitor brightness (ddcutil), used by
+  # noctalia's brightness service. Loads i2c-dev at boot and grants the i2c
+  # group read/write access to /dev/i2c-*.
+  hardware.i2c.enable = true;
+
   # Power management
   powerManagement.enable = true;
   services.upower.enable = true; # needed for noctalia battery widget
@@ -324,6 +329,7 @@ in
     description = "samuel ainsworth";
     extraGroups = [
       "docker"
+      "i2c" # for ddcutil/external monitor brightness control
       "networkmanager"
       "wheel"
     ];
@@ -482,6 +488,7 @@ in
         chromium
         clang # many rust libs require having a `cc`
         comma
+        ddcutil # external monitor brightness via DDC/CI; used by noctalia (brightness.enable_ddcutil)
         elan
         impala
         jq

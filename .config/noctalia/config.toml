@@ -110,7 +110,7 @@ enable_sounds = false
 sound_volume = 0.5
 
 [brightness]
-enable_ddcutil = false
+enable_ddcutil = true
 
 [nightlight]
 enabled = true
