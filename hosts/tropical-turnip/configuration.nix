@@ -1,5 +1,10 @@
 # Configuration for tropical-turnip (Framework 13" AMD 7040)
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   # Last updated 2026-04-05
@@ -89,8 +94,10 @@ in
     ./hardware-configuration.nix
     ../../modules/core.nix
     ../../modules/oom-mitigations.nix
+    ../../modules/hibernation.nix
     ../../modules/restic-backup.nix
-    ./debug-ttm-kernel.nix # adds a "debug-ttm" boot entry (KASAN/lockdep) for drm/amd #5387
+    ../../modules/resume-diagnostics.nix
+    ./kernel.nix # single kernel with the TTM fix and diagnostic capabilities
 
   ];
 
@@ -104,15 +111,18 @@ in
     options mt7921e disable_aspm=1
   '';
 
-  # Cap how many generations get kernels+initrds on the 511M ESP. Without this,
-  # every generation accumulates until /boot fills and bootloader install fails
-  # with ENOSPC. The debug-ttm specialisation adds a SECOND (KASAN)
-  # kernel+initrd per generation (~150 MB/generation total), so the ESP only
-  # holds ~3 while it is enabled. Bump this back to ~8-10 after removing the
-  # debug-ttm specialisation.
+  # Keep three rollback generations on the small 511M ESP. There is now only
+  # one kernel per generation, but old generations may still contain debug-ttm.
   boot.loader.systemd-boot.configurationLimit = 3;
 
+  # Capture before any recovery changes the failed touchpad state (#14).
+  services.resumeDiagnostics.enable = true;
+
   ### Hibernation, swap, and power management
+
+  # Toggle here, then rebuild. Off means plain suspend and critical-battery
+  # power-off. Keep disabled while investigating resume failures (#13).
+  powerManagement.hibernation.enable = false;
 
   # Create a 36GB swap file for hibernation (system has 32GB RAM)
   swapDevices = [
@@ -180,7 +190,7 @@ in
   ];
 
   # Power management - prevent file system corruption from sudden battery death
-  # When battery hits 5%, the system will hibernate (save RAM to disk).
+  # At 5%, hibernate if enabled; otherwise power off cleanly (session is lost).
   #
   # These three MUST be strictly descending: low > critical > action. UPower's
   # policy_config_validate() tests IS_DESCENDING(low, critical, action) and, when
@@ -195,10 +205,8 @@ in
     percentageLow = 20; # Warn at 20%
     percentageCritical = 10; # Critical at 10%
     percentageAction = 5; # Take action at 5%
-    # NOTE: This will attempt hibernate even if there's a kernel mismatch (unlike
-    # smart-suspend which falls back to plain suspend). At 5% battery, a failed
-    # hibernate resume on next boot is preferable to losing everything.
-    criticalPowerAction = "Hibernate";
+    # criticalPowerAction is selected by modules/hibernation.nix.
+    # When enabled, emergency hibernation still ignores kernel mismatches.
   };
 
   # Enable verbose UPower logging to diagnose battery action failures
@@ -216,11 +224,13 @@ in
   # `systemctl suspend-then-hibernate` only enqueues the sleep request, so the
   # user-session caller cannot observe a later systemd-sleep failure. Capture
   # it on the system unit itself and then make one direct hibernation attempt.
-  systemd.services."systemd-suspend-then-hibernate".onFailure = [
-    "hibernate-fallback.service"
-  ];
+  systemd.services."systemd-suspend-then-hibernate".onFailure =
+    lib.optionals config.powerManagement.hibernation.enable
+      [
+        "hibernate-fallback.service"
+      ];
 
-  systemd.services.hibernate-fallback = {
+  systemd.services.hibernate-fallback = lib.mkIf config.powerManagement.hibernation.enable {
     description = "Capture suspend-then-hibernate failure and fall back to hibernation";
     serviceConfig.Type = "oneshot";
     script = ''
@@ -241,17 +251,21 @@ in
   # If the fallback itself returns a regular failure, preserve the same
   # diagnostics. A kernel hang cannot run OnFailure; panic/watchdog capture is
   # responsible for that case.
-  systemd.services."systemd-hibernate".onFailure = [
-    "hibernate-failure-diagnostics.service"
-  ];
+  systemd.services."systemd-hibernate".onFailure =
+    lib.optionals config.powerManagement.hibernation.enable
+      [
+        "hibernate-failure-diagnostics.service"
+      ];
 
-  systemd.services.hibernate-failure-diagnostics = {
-    description = "Capture hibernation failure diagnostics";
-    serviceConfig.Type = "oneshot";
-    script = ''
-      ${sleepFailureDiagnostics} hibernate
-    '';
-  };
+  systemd.services.hibernate-failure-diagnostics =
+    lib.mkIf config.powerManagement.hibernation.enable
+      {
+        description = "Capture hibernation failure diagnostics";
+        serviceConfig.Type = "oneshot";
+        script = ''
+          ${sleepFailureDiagnostics} hibernate
+        '';
+      };
 
   # Ignore logind's lid action and let swayidle's smart-suspend handle suspension.
   # After the 5-minute inactivity timeout, a closed lid with no external display

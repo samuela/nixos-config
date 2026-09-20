@@ -322,6 +322,11 @@ def blocker? : IO (Option Blocker) := do
       return none
 
 def suspendCommand : IO String := do
+  -- Fail closed if the policy file is missing/unreadable. Read it here so a
+  -- rebuild also changes the action of an already-armed idle wait.
+  if (← readTrimLower? "/etc/hibernation-enabled") != some "yes" then
+    log "hibernation disabled by policy; using suspend"
+    return "suspend"
   let booted ← IO.FS.realPath "/run/booted-system/kernel"
   let current ← IO.FS.realPath "/run/current-system/kernel"
   if booted == current then
@@ -351,7 +356,8 @@ def suspendNow : IO UInt32 := do
   log s!"sleep action failed: action={action}; exit_code={out.exitCode}"
   collectFailureDiagnostics action
 
-  if action != "suspend-then-hibernate" then
+  if action != "suspend-then-hibernate" ||
+      (← readTrimLower? "/etc/hibernation-enabled") != some "yes" then
     return out.exitCode
 
   log "fallback.begin: suspend-then-hibernate failed; requesting hibernate"
