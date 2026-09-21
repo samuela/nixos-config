@@ -72,12 +72,12 @@ let
     config.allowUnfree = true;
   };
 
-  # Tracking nixpkgs master for Pi only. Last updated 2026-09-15.
-  # Pi 0.85.1 removes experimental server imports that break the subagent SDK.
-  # Leave the system and other tools' nixpkgs pins intact.
+  # Tracking nixpkgs master for Pi only. Last updated 2026-09-20.
+  # Pi 0.86.1 provides the transcript helpers required by pi-subagents 0.70.1's
+  # detached watchdog graph. Leave the system and other tools' pins intact.
   pi-nixpkgs-src = builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/209c4430f3b76831d9d436c7158d5712a210f9b2.tar.gz";
-    sha256 = "sha256-rg1HGwu7VnJutVIO3/WMrsKURHZHtjUu/QuBFH4s4YY=";
+    url = "https://github.com/NixOS/nixpkgs/archive/4929464aa07913f79d2b8dae986ac5f141cbfbec.tar.gz";
+    sha256 = "sha256-gZkAB3n30TbHjXl0jZRtidgvFvh26ioUI8kTtXqsrAA=";
   };
   pi-pkgs = import pi-nixpkgs-src {
     inherit (pkgs.stdenv.hostPlatform) system;
