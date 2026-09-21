@@ -38,10 +38,10 @@ let
     hash = "sha256-tjTpwDvc5BNTOlH8MtimMbOahiGx7o+asYJbbKBDFwI=";
   };
 
-  # Tracking nixpkgs master branch. Last updated 2026-08-30.
+  # Tracking nixpkgs master branch. Last updated 2026-09-17.
   unstable-nixpkgs-src = builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/5aa3282f22543a9bc50dd2061a3dbd695eb924ca.tar.gz";
-    sha256 = "sha256-8tmfV+WS7wcChgr5HjJR16KGHmbwGuX1u4mW3iMGwvI=";
+    url = "https://github.com/NixOS/nixpkgs/archive/a32edd7654519351e48e80372a928df336394670.tar.gz";
+    sha256 = "sha256-RjR8AyvGlWuw16XRj7C1YDEw4E27ciuyPeB2nDMzgTU=";
   };
 
   # OpenClaw alone follows the pnpm 12 prerequisite and the exact published
@@ -478,6 +478,7 @@ in
         gurk-rs
         unstable-pkgs.mkchromecast
         pi-pkgs.pi-coding-agent
+        unstable-pkgs.vastai
         unstable-pkgs.vscode
         # unstable-pkgs.crush # https://github.com/NixOS/nixpkgs/issues/470068
 
