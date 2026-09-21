@@ -95,8 +95,20 @@ output "HDMI-A-1" {
     position x=0 y=0
 }
 
-// Big external monitor - positioned at the top
-output "DP-3" {
+// The TV on DP-2 - 4K, above the centered laptop screen.
+// TODO: address this by make/model/serial (device id) instead of the DP-2 connector,
+// so its settings follow the TV rather than the port. See the Dell block below for the
+// pattern. Run `niri msg --json outputs` with the TV plugged in to get the values.
+output "DP-2" {
+    mode "3840x2160@60"
+    scale 1
+    transform "normal"
+    position x=0 y=0
+}
+
+// Dell U2720Q - addressed by make/model/serial (not connector) so its settings
+// follow the monitor when it is plugged into a different port.
+output "Dell Inc. DELL U2720Q JRSY193" {
     mode "3840x2160@60"
     scale 1.5
     transform "normal"
@@ -111,8 +123,10 @@ output "BOE NE135A1M-NY1 Unknown" {
     mode "2880x1920@120"
     scale 2
     transform "normal"
-    // Positioned below and centered under the big monitor
-    // x = (2560 - 1440) / 2 = 560
+    // Positioned below and centered under the big external monitor.
+    // The Dell is 3840x2160 physical at scale 1.5, so its logical size is 2560x1440.
+    // x = (2560 - 1440) / 2 = 560, y = 1440 (directly below it, sharing an edge
+    // so the pointer can move between outputs).
     position x=560 y=1440
 }
 
