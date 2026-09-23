@@ -69,6 +69,17 @@ existing substantial instrumentation overhead and requires a source build.
 IRQ debugfs is enabled, lockdep's chain capacity is raised from 2^16 to 2^18,
 and SysRq diagnostics + sync are enabled (mask 24). Panic-on-WARN stays off.
 
+The 7.2.2 kernel also carries two MT7921/MT7922 CLC firmware-parser backports,
+using `fetchpatch2` with pinned commit URLs and hashes: validate record bounds
+**and skip unknown indices**, in that order. The installed
+linux-firmware 20260810 contains index-3 records beyond the driver's array;
+validation without skipping would instead prevent the device from loading.
+Both upstream fixes are included in 7.2.7. Remove both backports and their
+source-equivalence test when upgrading to a kernel containing both fixes.
+This fixes the parser defect; it is not yet a confirmed fix for the Wi-Fi
+post-resume handshake timeouts. Firmware, power-saving settings, and regulatory
+refresh behavior are unchanged.
+
 `services.resumeDiagnostics.enable = true` enables observation for
 [touchpad resume issue #14](https://github.com/samuela/nixos-config/issues/14):
 
@@ -121,6 +132,7 @@ Configuration and rootless mocked-collector regression checks (from the repo):
 nix-shell -p nix python3 coreutils findutils gnugrep gawk util-linux bash shellcheck --run '
   nix-instantiate --eval --strict tests/hibernation.nix &&
   nix-instantiate --eval --strict tests/resume-diagnostics.nix &&
+  nix-build tests/mt7921-clc.nix --no-out-link --option builders "" &&
   shellcheck -s bash modules/resume-diagnostics.sh &&
   python3 tests/test_resume_diagnostics.py
 '
@@ -128,7 +140,10 @@ nix-shell -p nix python3 coreutils findutils gnugrep gawk util-linux bash shellc
 
 The mocked tests exercise retention, missing kernel interfaces, trace-setup
 failure, filtering, and the capture lifecycle, not actual hardware or systemd
-sleep ordering. Verify one real sleep cycle after activation.
+sleep ordering. The MT7921 test applies both configured backports to the pinned
+kernel source and checks that the resulting MCU source exactly matches Linux
+7.2.7; it does not compile the kernel or test Wi-Fi hardware. Verify the hooks
+on the next normal sleep cycle after activation.
 
 ## Deploy
 

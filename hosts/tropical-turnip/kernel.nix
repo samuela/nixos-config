@@ -40,6 +40,28 @@ in
       name = "ttm-5387-swapout-bulk-move";
       patch = ./patches/ttm-5387-swapout-bulk-move.patch;
     }
+    {
+      # Linux 7.2.2 trusts CLC indices from the newer MT7922 firmware.
+      # Keep bounds validation AND unknown-record skipping together: validation
+      # alone prevents this firmware from loading. Both fixes are in 7.2.7;
+      # remove both backports (and their source-equivalence test) after upgrading.
+      # Upstream: 9417c5818a0146980c2608fda94c908e604eb033.
+      name = "mt7921-clc-validate";
+      patch = pkgs.fetchpatch2 {
+        name = "mt7921-validate-clc-firmware-records.patch";
+        url = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/patch/?id=3c505e2af16a9320f4355218394a955fbbc65322";
+        hash = "sha256-NL5GOfIi+yyKTnmqWy8fMqxnC7CukEj6p/I0wzgbcGo=";
+      };
+    }
+    {
+      # Must follow validation; upstream: 1a296bfd3e775e515233f746218824fc7dd5ff16.
+      name = "mt7921-clc-skip-unknown";
+      patch = pkgs.fetchpatch2 {
+        name = "mt7921-skip-unknown-clc-firmware-records.patch";
+        url = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/patch/?id=0c5916a036447acabb9972ccc59a67f0e2395909";
+        hash = "sha256-5JciDfww7+W7rg569DPMsZkHmuvCSaHEQZNuQwkIjVo=";
+      };
+    }
   ];
 
   # Diagnostic task/CPU dumps plus sync, without enabling kill/reboot keys.
