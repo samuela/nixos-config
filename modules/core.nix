@@ -675,6 +675,10 @@ in
           bind-key -n C-PageDown next-window
           bind-key -n C-PageUp previous-window
 
+          # Open splits in the current pane's working directory
+          bind-key '"' split-window -v -c '#{pane_current_path}'
+          bind-key % split-window -h -c '#{pane_current_path}'
+
           # Show compact per-window Codex state indicators:
           # green dot = working, cyan ? = waiting for prompt, yellow ! = waiting for approval.
           set -g status-interval 2
