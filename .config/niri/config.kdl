@@ -108,7 +108,8 @@ output "Technical Concepts Ltd Beyond TV 0x00010000" {
     mode "3840x2160@120"
     scale 2
     transform "normal"
-    position x=0 y=0
+    // 1920x1080 logical; center at x=1280, bottom at y=1440.
+    position x=320 y=360
 }
 
 // Dell U2720Q - addressed by make/model/serial (not connector) so its settings
@@ -128,11 +129,9 @@ output "BOE NE135A1M-NY1 Unknown" {
     mode "2880x1920@120"
     scale 2
     transform "normal"
-    // Positioned below and centered under the big external monitor.
-    // The Beyond TV is 3840x2160 at scale 2 (1920x1080 logical).
-    // x = (1920 - 1440) / 2 = 240, y = 1080 (directly below it, sharing an edge
-    // so the pointer can move between outputs).
-    position x=240 y=1080
+    // 1440x960 logical; centered below the Dell (2560x1440) and the Beyond TV
+    // (1920x1080). Both external outputs are positioned to share its top edge.
+    position x=560 y=1440
 }
 
 // luminous-lemon's built-in panel (InfoVision, 1080p). Only the mode is pinned (it's
