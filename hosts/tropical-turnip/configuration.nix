@@ -98,6 +98,7 @@ in
     ../../modules/restic-backup.nix
     ../../modules/resume-diagnostics.nix
     ./kernel.nix # single kernel with the TTM fix and diagnostic capabilities
+    ./networkmanager.nix # isolated 1.58.1 upgrade for Wi-Fi authentication retries
 
   ];
 

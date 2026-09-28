@@ -58,6 +58,41 @@ Currently **disabled** while investigating [resume failures (#13)](https://githu
 unsaved work, and UPower cannot act while the machine remains suspended. Save
 work and shut down for extended periods away from power.
 
+## NetworkManager authentication retries (tropical-turnip)
+
+`hosts/tropical-turnip/networkmanager.nix` selects **NetworkManager 1.58.1**
+from the separate, hash-pinned `nix/networkmanager-nixpkgs.nix` revision.
+Only this host's NetworkManager package and its dependencies use that pin;
+the primary nixpkgs pin, kernel/CLC/TTM fixes, Wi-Fi firmware, supplicant,
+graphics stack and other hosts remain unchanged. No global overlay is used.
+
+For [Wi-Fi incident #15](https://github.com/samuela/nixos-config/issues/15),
+1.58 includes the [upstream authentication-retry fix](https://github.com/NetworkManager/NetworkManager/commit/746a5902ad85ec0611a3e6ebfd7b68b45621a40b):
+a previously successful connection retries saved credentials before requesting
+a new password. Finite default retry behavior is retained. This addresses the
+premature `NO_SECRETS` autoconnect block, **not the original missing-M3 cause**;
+recovery is not guaranteed if every retry fails.
+
+Validate the package selection and sandboxed binary smoke checks:
+
+```sh
+nix-shell -p nix --run 'nix-build tests/networkmanager.nix --no-out-link --option builders ""'
+```
+
+The test checks that unrelated kernel, firmware, graphics, systemd and supplicant
+selections stay unchanged, verifies daemon/client versions and the compiled
+Wi-Fi retry code marker. It does not exercise authentication on real hardware.
+
+Activate with `sudo ~/dev/nixos-config/rebuild.sh switch --option builders ''`.
+Expect a NetworkManager restart and brief network interruption; this change does
+not require a reboot. Verify the **running daemon** via
+`nmcli -g VERSION general` (not just the installed client's `nmcli --version`).
+Observe retries during normal use rather than forcing suspend/resume cycles.
+
+To roll back this override, remove the `./networkmanager.nix` import from the
+host configuration and rebuild. Once the main pin includes NetworkManager
+1.58 or newer, remove the separate pin, host module/import and temporary test.
+
 ## Kernel and resume diagnostics (tropical-turnip)
 
 `hosts/tropical-turnip/kernel.nix` defines **one kernel**, including the corrected
