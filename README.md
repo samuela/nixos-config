@@ -58,6 +58,58 @@ Currently **disabled** while investigating [resume failures (#13)](https://githu
 unsaved work, and UPower cannot act while the machine remains suspended. Save
 work and shut down for extended periods away from power.
 
+## Idle / screen-off diagnostics (tropical-turnip)
+
+Screen-off remains at **3 minutes** and smart-suspend at **5 minutes**. Diagnostics
+add no locking, power commands, or inhibitors of their own:
+
+- `swayidle.service`: debug logs for timer registration, idle/resume callbacks,
+  command launches, and the screen-off IPC command's exit status. `-w` stays off
+  so smart-suspend cannot block resume callbacks.
+- `idle-diagnostics.service`: independent **30-second** inhibitor-aware and
+  input-only idle notifications, kernel DPMS changes (polled every 5 seconds),
+  and a heartbeat every minute. No key contents, pointer coordinates, or window
+  titles are collected.
+- `niri.service`: narrowly scoped ScreenSaver D-Bus trace logs with application,
+  reason, and owner names, uninhibit calls, and disconnected clients. Application
+  names/reasons are client-supplied and may contain sensitive text; review logs
+  before sharing. This does **not** enumerate native Wayland inhibitor owners.
+
+Apply with `sudo ~/dev/nixos-config/rebuild.sh switch --option builders ''`.
+The observer and swayidle logging take effect when their user units start/restart;
+Niri's trace filter takes effect **after logging out and back in**. Do not restart
+`niri.service` in a working session: that terminates the desktop.
+
+After another occurrence, note when you left and returned, and inspect all three
+units together (replace the times with the relevant interval):
+
+```sh
+journalctl --user -u swayidle.service -u idle-diagnostics.service -u niri.service \
+  --since '2026-10-05 19:00' --until '2026-10-05 20:15' -o short-iso-precise
+```
+
+Interpretation:
+
+- Sustained `input-only=idle` but `inhibitor-aware=active` indicates idle inhibition.
+  Look for matching Niri `fdo inhibit` app/reason/owner messages. A Wayland
+  inhibitor can cause the same discrepancy without a D-Bus message.
+- `input-only resumed` indicates compositor-reported activity, not necessarily
+  intentional physical input. Repeated activity can prevent the 3-minute timeout.
+- `idle-screen-off` records whether the timeout command ran and its exit status.
+  Exit zero means the IPC request succeeded; only the DPMS log shows whether the
+  kernel subsequently reported the display off (not a physical panel measurement).
+- An inhibitor-aware `resumed` event alone is **not proof of user input**: a new
+  inhibitor also causes it. Pair it with the input-only stream. Brief mismatches
+  can occur while the two callbacks are being delivered; use sustained state.
+- Heartbeats distinguish quiet periods from a missing observer. These observations
+  start when the service starts; they cannot reconstruct earlier incidents.
+
+Tests (fake Wayland compositor plus Nix assertions preserving the idle policy):
+
+```sh
+nix-shell -p nix --run 'nix-build tests/idle-diagnostics.nix --no-out-link --option builders ""'
+```
+
 ## NetworkManager authentication retries (tropical-turnip)
 
 `hosts/tropical-turnip/networkmanager.nix` selects **NetworkManager 1.58.1**

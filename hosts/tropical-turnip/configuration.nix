@@ -409,6 +409,32 @@ in
 
   services.resticBackup.enable = true;
 
+  # Target only ScreenSaver tracing, not global Wayland/input tracing (which can
+  # expose keystrokes). Niri logs D-Bus inhibitor app/reason/owner and releases.
+  # Preserve Niri 26.04's default filters. Takes effect at the next login; never
+  # restart the compositor just to turn on diagnostics.
+  systemd.user.services.niri = {
+    restartIfChanged = false;
+    environment.RUST_LOG = "niri=debug,smithay::backend::renderer::gles=error,niri::dbus::freedesktop_screensaver=trace";
+  };
+
+  # Independent, read-only comparison of input-only and inhibitor-aware idle.
+  # Also records actual kernel DPMS state changes and a once-per-minute heartbeat.
+  systemd.user.services.idle-diagnostics = {
+    description = "Read-only Wayland idle and display-power diagnostics";
+    after = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    wantedBy = [ "graphical-session.target" ];
+    unitConfig.ConditionEnvironment = "NIRI_SOCKET";
+    serviceConfig = {
+      ExecStart = "${pkgs.callPackage ./idle-diagnostics.nix { }}/bin/idle-diagnostics";
+      Restart = "on-failure";
+      RestartSec = 5;
+      StandardOutput = "journal";
+      StandardError = "journal";
+    };
+  };
+
   # swayidle with smart-suspend for idle suspension
   home-manager.users.skainswo =
     { pkgs, ... }:
@@ -426,6 +452,18 @@ in
           ])
         ];
       } ./smart-suspend.lean;
+      screen-off = pkgs.writeShellScript "idle-screen-off" ''
+        echo "idle-screen-off: timeout fired; requesting power-off-monitors"
+        if ${pkgs.niri}/bin/niri msg action power-off-monitors; then
+          status=0
+        else
+          status=$?
+        fi
+        # Without -w, swayidle cannot report the grandchild's exit status.
+        # Success here means IPC accepted the request, not that DPMS stayed off.
+        echo "idle-screen-off: power-off-monitors exit_status=$status"
+        exit "$status"
+      '';
     in
     {
       # Link smart-suspend for manual debugging. Note that this is not in PATH.
@@ -437,12 +475,13 @@ in
         # while a timeout command is still running. "smart-suspend arm" loops
         # until it suspends, so with -w swayidle could never deliver disarm
         # mid-wait — the user would stay armed even while actively using the
-        # machine.
-        extraArgs = [ ];
+        # machine. -d records timeout registration, idle/resume callbacks, and
+        # command launches; it does not log key contents or pointer coordinates.
+        extraArgs = [ "-d" ];
         timeouts = [
           {
             timeout = 3 * 60;
-            command = "${pkgs.niri}/bin/niri msg action power-off-monitors";
+            command = "${screen-off}";
           }
 
           {
