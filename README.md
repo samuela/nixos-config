@@ -40,7 +40,7 @@ Set `powerManagement.hibernation.enable` in
 `hosts/tropical-turnip/configuration.nix` to `true` or `false`, then apply:
 
 ```sh
-sudo ~/dev/nixos-config/rebuild.sh switch --option builders ''
+sudo ~/dev/nixos-config/rebuild.sh switch
 ```
 
 Currently **disabled** while investigating [resume failures (#13)](https://github.com/samuela/nixos-config/issues/13).

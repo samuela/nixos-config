@@ -274,7 +274,7 @@ in
   powerManagement.enable = true;
   services.upower.enable = true; # needed for noctalia battery widget
 
-  # nixbuild.net remote builder
+  # nixbuild.net (ad hoc remote builder only -- not a default builder; see below)
   programs.ssh.extraConfig = ''
     Host eu.nixbuild.net
       PubkeyAcceptedKeyTypes ssh-ed25519
@@ -288,18 +288,11 @@ in
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPIQCZc54poJ8vqawd8TraNryQeJnvH1eLpIDgbiqymM";
     };
   };
-  nix.distributedBuilds = true;
-  nix.buildMachines = [
-    {
-      hostName = "eu.nixbuild.net";
-      system = "x86_64-linux";
-      maxJobs = 100;
-      supportedFeatures = [
-        "benchmark"
-        "big-parallel"
-      ];
-    }
-  ];
+  # eu.nixbuild.net is intentionally not registered in `nix.buildMachines`, so
+  # builds stay local unless a command explicitly opts in. To offload one build:
+  #   sudo ./rebuild.sh build --builders "ssh://eu.nixbuild.net x86_64-linux - 100 1 benchmark,big-parallel"
+  # (or `--option builders '...'` for other `nix` commands). The SSH host config
+  # and known host above are retained for that ad hoc use.
   nix.settings.builders-use-substitutes = true;
 
   nix.settings.extra-substituters = [
