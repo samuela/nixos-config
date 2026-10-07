@@ -618,7 +618,9 @@ in
         # gitFull builds git-send-email with the SMTP/TLS Perl modules
         # (IO::Socket::SSL, Authen::SASL) that plain pkgs.git omits.
         package = pkgs.gitFull;
-        settings.core.pager = "hunk pager";
+        # Deliberately not `hunk pager`: a diff piped through the pager has no
+        # reachable source, so collapsed unchanged-context gaps cannot expand.
+        # Use `hunk diff`/`hunk show` for reviews instead.
         settings.user.email = "skainsworth@gmail.com";
         settings.user.name = "Samuel Ainsworth";
         # Outgoing mail for `git send-email` (e.g. kernel patches). The SMTP
@@ -638,11 +640,13 @@ in
         package = jujutsuPackage;
         settings.revsets.log = "trunk() | (trunk()..@) | descendants(@, 5)";
         settings.ui.default-command = "log";
-        settings.ui.diff-formatter = ":git";
-        settings.ui.pager = [
-          "hunk"
-          "pager"
-        ];
+        # Deliberately do not set `ui.pager = [ "hunk" "pager" ]` (nor the
+        # `ui.diff-formatter = ":git"` that existed only to feed it). `hunk pager`
+        # receives an anonymous patch on stdin, so it cannot reload full file
+        # source and collapsed unchanged-context gaps are not expandable.
+        # Review with `hunk show` (alias `hs`) or `hunk diff` instead; those use
+        # the jj adapter, resolve exact commit endpoints, and support expanding
+        # gaps with `e`.
         settings.user = {
           name = "Samuel Ainsworth";
           email = "skainsworth@gmail.com";
