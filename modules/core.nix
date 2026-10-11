@@ -72,12 +72,10 @@ let
     config.allowUnfree = true;
   };
 
-  # Tracking nixpkgs master for Pi only. Last updated 2026-09-20.
-  # Pi 0.86.1 provides the transcript helpers required by pi-subagents 0.70.1's
-  # detached watchdog graph. Leave the system and other tools' pins intact.
+  # Pin Pi 1.1.0 independently of the system and other tools' package sets.
   pi-nixpkgs-src = builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/4929464aa07913f79d2b8dae986ac5f141cbfbec.tar.gz";
-    sha256 = "sha256-gZkAB3n30TbHjXl0jZRtidgvFvh26ioUI8kTtXqsrAA=";
+    url = "https://github.com/NixOS/nixpkgs/archive/131eeb0c76df8402dc8178edd71f53f27e925172.tar.gz";
+    sha256 = "sha256-VuSaUFRmtr2Sh5VhrQWBM8WIo0yRB1+pzkP9PjxwQhg=";
   };
   pi-pkgs = import pi-nixpkgs-src {
     inherit (pkgs.stdenv.hostPlatform) system;
@@ -466,7 +464,6 @@ in
         # See https://github.com/NixOS/nixpkgs/issues/436326#issuecomment-3217889408
         unstable-pkgs.claude-code
         unstable-pkgs.codex
-        unstable-pkgs.gemini-cli
         unstable-pkgs.hunk
         gurk-rs
         unstable-pkgs.mkchromecast
