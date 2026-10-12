@@ -481,6 +481,7 @@ in
         comma
         ddcutil # external monitor brightness via DDC/CI; used by noctalia (brightness.enable_ddcutil)
         elan
+        google-cloud-sdk
         impala
         jq
         nautilus # See https://github.com/YaLTeR/niri/issues/1863
