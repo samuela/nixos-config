@@ -662,7 +662,11 @@ in
       programs.tmux = {
         enable = true;
         prefix = "C-a";
+        # Preserve modified Enter keys for applications such as Pi.
         extraConfig = ''
+          set -s extended-keys on
+          set -s extended-keys-format csi-u
+
           # Enable mouse mode for scrolling and automatic copy mode entry
           set -g mouse on
 
