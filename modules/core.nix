@@ -663,9 +663,13 @@ in
         enable = true;
         prefix = "C-a";
         # Preserve modified Enter keys for applications such as Pi.
+        # Negotiate client input with Kitty flag 1 (requires Alacritty >= 0.16).
+        # Higher flags introduce colon fields that tmux cannot decode.
+        # Client negotiation is separate from the application-facing output format.
         extraConfig = ''
           set -s extended-keys on
           set -s extended-keys-format csi-u
+          set -as terminal-overrides ',alacritty:Eneks=\E[=1u:Dseks=\E[=0u'
 
           # Enable mouse mode for scrolling and automatic copy mode entry
           set -g mouse on
