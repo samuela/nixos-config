@@ -72,6 +72,18 @@ let
     config.allowUnfree = true;
   };
 
+  # Tracking nixpkgs master for Claude Code only. Last updated 2026-10-19.
+  # Claude Code cuts releases several times a week, so it carries its own pin
+  # and the shared unstable package set stays where it is.
+  claude-code-nixpkgs-src = builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/8ad503e1c10db0a0ec6de8f83ce2d4ee62ebdee9.tar.gz";
+    sha256 = "sha256-acqZbGIXGzr5GqTTZdd/i4F8QtMNnhkEit/aXR3fgO8=";
+  };
+  claude-code-pkgs = import claude-code-nixpkgs-src {
+    inherit (pkgs.stdenv.hostPlatform) system;
+    config.allowUnfree = true;
+  };
+
   # Pin Pi 1.1.0 independently of the system and other tools' package sets.
   pi-nixpkgs-src = builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/131eeb0c76df8402dc8178edd71f53f27e925172.tar.gz";
@@ -462,7 +474,7 @@ in
 
       home.packages = with pkgs; [
         # See https://github.com/NixOS/nixpkgs/issues/436326#issuecomment-3217889408
-        unstable-pkgs.claude-code
+        claude-code-pkgs.claude-code
         unstable-pkgs.codex
         unstable-pkgs.hunk
         gurk-rs
