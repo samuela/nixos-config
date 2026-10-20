@@ -112,6 +112,21 @@ sound_volume = 0.5
 [brightness]
 enable_ddcutil = true
 
+# Uses the built-in community plugin source; wl-mirror is installed via Nix.
+[plugins]
+enabled = ["elijaharch/wl-screen-mirror"]
+
+[control_center]
+# Home has six shortcut slots; Bluetooth remains accessible from the bar/tab.
+shortcuts = [
+    { type = "wifi" },
+    { type = "elijaharch/wl-screen-mirror:toggle" },
+    { type = "caffeine" },
+    { type = "nightlight" },
+    { type = "notification" },
+    { type = "power_profile" },
+]
+
 [nightlight]
 enabled = true
 force = false

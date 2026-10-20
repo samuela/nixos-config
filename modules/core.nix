@@ -508,6 +508,7 @@ in
         swaybg # used in spawn-at-startup by niri config
         swayosd # used in keyboard bindings in niri config. for some reason services.swayosd doesn't add it to PATH
         walker # see services.walker below
+        wl-mirror # Noctalia's Wayland Screen Mirror plugin
         xwayland-satellite # For steam and other X11 applications. See https://discourse.nixos.org/t/how-to-do-xwayland-on-nixos/57825/11?u=samuela.
       ]
       # used by rust-analyzer vsocde extension
