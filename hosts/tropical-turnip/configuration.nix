@@ -99,6 +99,7 @@ in
     ../../modules/resume-diagnostics.nix
     ./kernel.nix # single kernel with the TTM fix and diagnostic capabilities
     ./networkmanager.nix # isolated 1.58.1 upgrade for Wi-Fi authentication retries
+    ./mt7922-firmware.nix # reversible Wi-Fi-only firmware comparison (#15)
 
   ];
 
@@ -111,6 +112,10 @@ in
   boot.extraModprobeConfig = ''
     options mt7921e disable_aspm=1
   '';
+
+  # The February Wi-Fi pair reproduced the same failure on September 29 (#15).
+  # End that comparison and restore the main pin's July pair; Bluetooth stays put.
+  hardware.mt7922Firmware.usePrevious = false;
 
   # Keep three rollback generations on the small 511M ESP. There is now only
   # one kernel per generation, but old generations may still contain debug-ttm.

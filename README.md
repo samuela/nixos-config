@@ -114,16 +114,19 @@ nix-shell -p nix --run 'nix-build tests/idle-diagnostics.nix --no-out-link --opt
 
 `hosts/tropical-turnip/networkmanager.nix` selects **NetworkManager 1.58.1**
 from the separate, hash-pinned `nix/networkmanager-nixpkgs.nix` revision.
-Only this host's NetworkManager package and its dependencies use that pin;
-the primary nixpkgs pin, kernel/CLC/TTM fixes, Wi-Fi firmware, supplicant,
-graphics stack and other hosts remain unchanged. No global overlay is used.
+Only this host's NetworkManager package and its dependencies use that pin.
+This override itself leaves the primary nixpkgs pin, kernel/CLC/TTM fixes,
+firmware, supplicant, graphics stack and other hosts unchanged. No global
+overlay is used; the separate firmware comparison below is independently toggled.
 
 For [Wi-Fi incident #15](https://github.com/samuela/nixos-config/issues/15),
 1.58 includes the [upstream authentication-retry fix](https://github.com/NetworkManager/NetworkManager/commit/746a5902ad85ec0611a3e6ebfd7b68b45621a40b):
 a previously successful connection retries saved credentials before requesting
 a new password. Finite default retry behavior is retained. This addresses the
 premature `NO_SECRETS` autoconnect block, **not the original missing-M3 cause**;
-recovery is not guaranteed if every retry fails.
+recovery is not guaranteed if every retry fails. The September 28 recurrence
+confirmed an automatic retry but both handshakes stalled; 1.58.1 alone was not
+sufficient to recover connectivity.
 
 Validate the package selection and sandboxed binary smoke checks:
 
@@ -145,10 +148,98 @@ To roll back this override, remove the `./networkmanager.nix` import from the
 host configuration and rebuild. Once the main pin includes NetworkManager
 1.58 or newer, remove the separate pin, host module/import and temporary test.
 
+## MT7922 Wi-Fi firmware comparison (tropical-turnip)
+
+The toggle in `hosts/tropical-turnip/configuration.nix` is now **false**:
+its next activation/rebind restores the normal July Wi-Fi pair. Setting
+`hardware.mt7922Firmware.usePrevious = true` selects **only the Wi-Fi RAM and ROM
+patch** from the February 24 builds shipped in linux-firmware-20260519.
+`mt7922-firmware-package.nix` fetches the two blobs from an immutable upstream
+commit with pinned hashes; both match the retained May release byte-for-byte.
+The main firmware bundle stays installed. Bluetooth and every other firmware
+payload remain unchanged, as do NetworkManager 1.58.1, the supplicant, kernel
+(including both CLC backports), graphics and power-management settings.
+
+This is a reversible diagnostic comparison for
+[incident #15](https://github.com/samuela/nixos-config/issues/15), **not a known
+fix or a recommendation to keep old firmware indefinitely**. Observe ordinary
+use; do not force repeated suspend cycles. A successful initial reconnect after
+resetting the device is not proof that the older firmware fixes the recurrence.
+The [September 29 recurrence](https://github.com/samuela/nixos-config/issues/15#issuecomment-5900948293)
+reproduced the same handshake stalls with this pair: the downgrade is **not a
+fix**. Restoration of the normal pair is prepared; running firmware changes
+only after the operator completes the switch and rebind below.
+
+Validate the enabled/disabled configurations and the complete firmware trees:
+
+```sh
+nix-shell -p nix --run 'nix-build tests/mt7922-firmware.nix --no-out-link --option builders ""'
+```
+
+The test requires exactly two changed firmware files, checks their decompressed
+hashes/build headers, and verifies unchanged kernel/userspace selections. Both
+variants are forced in the test regardless of the deployed toggle. It does not
+exercise the firmware on hardware.
+
+**Apply from a local terminal, not over this Wi-Fi connection.** First activate:
+
+```sh
+sudo ~/dev/nixos-config/rebuild.sh switch --option builders ''
+```
+
+A switch updates the kernel's firmware search path but does not replace firmware
+already running on the card. Rebind this host's MT7922 PCI device to reload it
+(brief Wi-Fi interruption; no reboot). No manual NetworkManager restart is
+needed; the supplicant may restart during the device change. Rebinding keeps
+the currently loaded CLC-patched modules, rather than inadvertently loading
+modules from the older booted generation:
+
+```sh
+sudo sh -c '
+  set -eu
+  dev=0000:01:00.0
+  pci=/sys/bus/pci/devices/$dev
+  driver=/sys/bus/pci/drivers/mt7921e
+  test "$(cat "$pci/vendor")" = 0x14c3
+  test "$(cat "$pci/device")" = 0x0616
+  test "$(cat /sys/module/firmware_class/parameters/path)" = "$(readlink -f /run/current-system/firmware)"
+  test -e "$driver/bind"
+  if test -L "$pci/driver"; then
+    test "$(readlink -f "$pci/driver")" = "$driver"
+    printf %s "$dev" > "$driver/unbind"
+  fi
+  printf %s "$dev" > "$driver/bind"
+'
+```
+
+Verify **both** new initialization messages in the kernel journal before
+interpreting the selected configuration:
+
+- **False (normal/restored):** RAM `20260724143402`, ROM `20260724143257a`.
+- True (older trial): RAM `20260224103233`, ROM `20260224103145a`.
+
+Also verify that `nmcli -g VERSION general` still reports `1.58.1` and Wi-Fi
+reconnects. An unsuccessful probe, missing build messages or failure to reconnect
+means the comparison has not yet been established; preserve the logs and roll
+back rather than repeatedly resetting the adapter.
+
+**Rollback:** set `hardware.mt7922Firmware.usePrevious = false`, run the same
+rebuild command, then the same PCI rebind command. The latter also handles an
+already-unbound device after a failed probe. Confirm the July build strings
+return. The baseline firmware and system are already in the local store; neither
+rollback nor this test requires changing the router or Bluetooth firmware.
+
+The optional [expanded Wi-Fi tracer](tools/wifi-trace/README.md) observes TX
+queue/descriptor metadata and bounded RX windows. It is separate from NixOS,
+has no default capture deadline, and stops at 16 MiB output. Starting it after
+the switch but before this necessary rebind can calibrate the new probes without
+another reset. Native tests are not proof of live verifier/attachment success.
+
 ## Kernel and resume diagnostics (tropical-turnip)
 
-`hosts/tropical-turnip/kernel.nix` defines **one kernel**, including the corrected
-TTM backport, Clang, KASAN, DEBUG_LIST, and lockdep. There is no new `debug-ttm`
+Both hosts use Linux **7.2.8** from the pinned `nixos-26.05` channel.
+`hosts/tropical-turnip/kernel.nix` defines **one kernel**, including the upstream
+TTM fix, Clang, KASAN, DEBUG_LIST, and lockdep. There is no new `debug-ttm`
 specialisation. Old generations may still have their historical debug entries;
 these are rollback choices, not a second build of the current configuration.
 Clang is required by this kernel's Rust + KASAN combination. This retains the
