@@ -32,6 +32,9 @@ in
 
   networking.hostName = "luminous-lemon";
 
+  # 7.2.8 in the nixos-26.05 pin; includes the DSA-6528-1 kernel fixes.
+  boot.kernelPackages = pkgs.linuxPackages_7_2;
+
   services.resticBackup.enable = true;
 
   environment.systemPackages = [

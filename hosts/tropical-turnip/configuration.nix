@@ -106,7 +106,7 @@ in
   networking.hostName = "tropical-turnip";
 
   # Use latest kernel for amdgpu/RDNA 3 MES fixes (6.12 had recurring GPU resets)
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_7_2;
 
   # See https://wiki.archlinux.org/title/Network_configuration/Wireless#mt7921
   boot.extraModprobeConfig = ''
