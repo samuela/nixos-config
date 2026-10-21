@@ -37,6 +37,9 @@ in
 
   services.resticBackup.enable = true;
 
+  # Allegra's ESP32 board streams audio over USB serial (/dev/ttyACM*).
+  users.users.skainswo.extraGroups = [ "dialout" ];
+
   environment.systemPackages = [
     (mkTvCmd "tv-on" "KEYCODE_WAKEUP")
     (mkTvCmd "tv-off" "KEYCODE_SLEEP")
