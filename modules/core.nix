@@ -174,9 +174,17 @@ in
     (_final: prev: {
       # Kitty flag 1 may omit CSI-u modifiers (notably Escape as CSI 27u).
       # Patch the shared package so Home Manager and helper clients agree.
-      # Remove once upstream accepts the bare-number form.
+      # https://github.com/tmux/tmux/pull/5796
+      # Remove once the pinned release includes the bare-number fix.
       tmux = prev.tmux.overrideAttrs (old: {
-        patches = (old.patches or [ ]) ++ [ ../nix/tmux-csi-u-default-modifier.patch ];
+        patches = (old.patches or [ ]) ++ [
+          (prev.fetchpatch {
+            url = "https://github.com/tmux/tmux/commit/2c298158cff5d9d60c1a4f78f1d0850cd1fa4525.patch";
+            hash = "sha256-jzoa9cSXv+2r9J+l74DeGTUkKYUYJdmeHwgb8eE1qos=";
+            # Backport only the decoder; tests/test_tmux_csi_u.py covers 3.6a.
+            excludes = [ "regress/tty-keys-csi-u.sh" ];
+          })
+        ];
       });
 
       niri =
