@@ -172,6 +172,13 @@ in
   # nixos-26.05 channel (niri > 26.04).
   nixpkgs.overlays = [
     (_final: prev: {
+      # Kitty flag 1 may omit CSI-u modifiers (notably Escape as CSI 27u).
+      # Patch the shared package so Home Manager and helper clients agree.
+      # Remove once upstream accepts the bare-number form.
+      tmux = prev.tmux.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [ ../nix/tmux-csi-u-default-modifier.patch ];
+      });
+
       niri =
         assert
           prev.niri.version == "26.04"
