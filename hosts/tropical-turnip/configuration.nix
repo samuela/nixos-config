@@ -96,7 +96,6 @@ in
     ../../modules/oom-mitigations.nix
     ../../modules/hibernation.nix
     ../../modules/restic-backup.nix
-    ../../modules/resume-diagnostics.nix
     ./kernel.nix # single kernel with the TTM fix and diagnostic capabilities
     ./networkmanager.nix # isolated 1.58.1 upgrade for Wi-Fi authentication retries
     ./mt7922-firmware.nix # reversible Wi-Fi-only firmware comparison (#15)
@@ -120,9 +119,6 @@ in
   # Keep three rollback generations on the small 511M ESP. There is now only
   # one kernel per generation, but old generations may still contain debug-ttm.
   boot.loader.systemd-boot.configurationLimit = 3;
-
-  # Capture before any recovery changes the failed touchpad state (#14).
-  services.resumeDiagnostics.enable = true;
 
   ### Hibernation, swap, and power management
 

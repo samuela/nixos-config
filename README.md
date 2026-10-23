@@ -254,70 +254,20 @@ These repair the parser defect but have not prevented the handshake stalls.
 The separate firmware comparison above remains unchanged; power-saving and
 regulatory-refresh policy stay fixed.
 
-`services.resumeDiagnostics.enable = true` enables observation for
-[touchpad resume issue #14](https://github.com/samuela/nixos-config/issues/14):
-
-- Before sleep: save GPIO register/IRQ/device state and arm a **private** tracefs
-  instance (`resume-diagnostics`), without changing other tracing sessions.
-- Trace PM callback start/end/error events and selected I2C-HID, HID-multitouch,
-  and AMD GPIO power/IRQ functions; include function return values when supported.
-  IRQ events are filtered to the touchpad and its AMD GPIO parent, discovered
-  afresh from `/proc/interrupts` rather than assuming IRQ 106 forever.
-- After the sleep operation completes: stop/save the trace and snapshot again.
-  A separate service collects settled state about five seconds later.
-- Record trace setup errors, missing kernel interfaces, and buffer overrun
-  counters rather than treating an incomplete trace as proof of success.
-
-The trace ring is 256 KiB **per CPU**, with only the newest 16 report directories
-retained. Reports live in `/var/lib/resume-diagnostics/`, readable by root and
-`wheel`, not other users. They contain kernel/session logs and hardware metadata:
-review before publishing. No raw input reports, keyboard events, or secret
-payloads are collected; no device resets or suspend requests are performed.
-
-When the touchpad fails, **before unbinding/rebinding it**, run:
-
-```sh
-sudo /run/current-system/sw/bin/resume-diagnostics capture broken
-```
-
-Move/click deliberately and confirm with `evtest` if needed (event numbers can
-change). After recovery, run:
-
-```sh
-sudo /run/current-system/sw/bin/resume-diagnostics capture recovered
-sudo /run/current-system/sw/bin/resume-diagnostics list
-```
-
-Capture is also useful while healthy for comparison. Missing IRQ debugfs on an
-older booted kernel is explicitly recorded; the remaining collection still works.
-The tracing captures sequencing/software state, not an electrical waveform or
-proof of firmware correctness. A motionless touchpad's silent IRQ is normal.
-
-Apply the configuration with the rebuild command above, then **reboot to load the
+Apply kernel changes with the rebuild command above, then **reboot to load the
 new kernel**. Merely switching configurations does not change the running kernel.
-Use `systemctl status resume-diagnostics-sleep` while diagnosing hook failures and
-inspect the latest report's `trace-config.txt`, `trace-setup.log`, and
-`trace-stats.txt` to verify that tracing actually ran. The oneshot sleep service
-is normally inactive between sleep cycles. Diagnostic failures do not block sleep.
 
-Configuration and rootless mocked-collector regression checks (from the repo):
+Configuration and upstream-source regression checks (from the repo):
 
 ```sh
-nix-shell -p nix python3 coreutils findutils gnugrep gawk util-linux bash shellcheck --run '
+nix-shell -p nix --run '
   nix-instantiate --eval --strict tests/hibernation.nix &&
-  nix-instantiate --eval --strict tests/resume-diagnostics.nix &&
-  nix-build tests/mt7921-clc.nix --no-out-link --option builders "" &&
-  shellcheck -s bash modules/resume-diagnostics.sh &&
-  python3 tests/test_resume_diagnostics.py
+  nix-build tests/mt7921-clc.nix --no-out-link --option builders ""
 '
 ```
 
-The mocked tests exercise retention, missing kernel interfaces, trace-setup
-failure, filtering, and the capture lifecycle, not actual hardware or systemd
-sleep ordering. The MT7921 test applies both configured backports to the pinned
-kernel source and checks that the resulting MCU source exactly matches Linux
-7.2.7; it does not compile the kernel or test Wi-Fi hardware. Verify the hooks
-on the next normal sleep cycle after activation.
+The MT7921 test checks the pinned kernel source; it does not compile the kernel
+or test Wi-Fi hardware.
 
 ## Deploy
 
