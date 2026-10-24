@@ -381,7 +381,7 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
-    Mod+T repeat=false { spawn "alacritty"; }
+    Mod+T repeat=false { spawn "ghostty"; }
     Mod+Z repeat=false { spawn "flatpak" "run" "app.zen_browser.zen"; }
     Mod+Space { spawn "vicinae" "toggle"; }
     // Mod+Space { spawn "fuzzel"; }

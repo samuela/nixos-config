@@ -24,7 +24,7 @@
         "showCategories": true,
         "showIconBackground": true,
         "sortByMostUsed": true,
-        "terminalCommand": "xterm -e",
+        "terminalCommand": "ghostty -e",
         "viewMode": "list"
     },
     "audio": {

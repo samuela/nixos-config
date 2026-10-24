@@ -549,6 +549,7 @@ in
       home.sessionVariables = {
         PAGER = "less -FE"; # For some reason this would be cat otherwise
         EDITOR = "nvim";
+        TERMINAL = "ghostty"; # Default terminal for apps that spawn $TERMINAL.
       };
 
       home.pointerCursor = {
@@ -629,9 +630,33 @@ in
       programs.gh.enable = true;
       programs.ghostty = {
         enable = true;
+        # Backport horizontal scroll passthrough until Ghostty 1.4.0.
+        # https://github.com/ghostty-org/ghostty/pull/12659
+        package = pkgs.ghostty.overrideAttrs (old: {
+          patches = (old.patches or [ ]) ++ [
+            (pkgs.fetchpatch2 {
+              url = "https://github.com/ghostty-org/ghostty/commit/5ea45919d7090a1fd3f77fe75eaddd97fd54f3bd.patch";
+              hash = "sha256-8HC1xaz4TiasahetLtNTlRSTKPHAVqMNLTBIDTBcFKM=";
+            })
+          ];
+        });
         enableZshIntegration = true;
         systemd.enable = true;
+        settings = {
+          # Reuse a warm process, even after its last window is closed.
+          gtk-single-instance = true;
+          quit-after-last-window-closed = false;
+          # Send horizontal trackpad scrolling to terminal apps such as Hunk.
+          gtk-horizontal-tab-scroll = false;
+          # Touchpad at 30% speed; mouse wheel at one tenth speed.
+          mouse-scroll-multiplier = "precision:0.3,discrete:0.3";
+        };
       };
+      # Home Manager installs Ghostty's upstream unit but doesn't enable it.
+      # Start the headless single-instance process with the graphical session.
+      xdg.configFile."systemd/user/graphical-session.target.wants/app-com.mitchellh.ghostty.service".source =
+        config.xdg.configFile."systemd/user/app-com.mitchellh.ghostty.service".source;
+
       programs.git = {
         enable = true;
         # gitFull builds git-send-email with the SMTP/TLS Perl modules
@@ -763,6 +788,14 @@ in
           ignoreSpace = true;
           share = true;
         };
+      };
+
+      # Default terminal per the xdg-terminal-exec spec (the modern replacement
+      # for the $TERMINAL convention); used by compliant launchers and by
+      # desktop entries with Terminal=true, e.g. the gurk entry above.
+      xdg.terminal-exec = {
+        enable = true;
+        settings.default = [ "com.mitchellh.ghostty.desktop" ];
       };
 
       xdg.mimeApps.enable = true;
