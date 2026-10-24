@@ -742,6 +742,11 @@ in
         "VICINAE_OVERRIDES=${config.home.homeDirectory}/.config/vicinae/overrides/ai-prefixes.jsonc"
       ];
 
+      # Feedback sound referenced by .config/niri/config.kdl:419–420:
+      # Shift+XF86AudioRaiseVolume and Shift+XF86AudioLowerVolume both play
+      # ~/.local/share/sounds/volume_beep.aif. Install it on every host.
+      home.file.".local/share/sounds/volume_beep.aif".source = ../sounds/volume_beep.aif;
+
       programs.wezterm.enable = true;
       programs.yazi.enable = true;
       programs.yazi.shellWrapperName = "y";
