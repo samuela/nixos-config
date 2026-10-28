@@ -34,6 +34,204 @@ EOF
 
 The `restic-backups-<hostname>.service` unit will fail until both files exist.
 
+## Home Assistant (luminous-lemon only)
+
+`modules/home-assistant.nix` uses the primary nixpkgs pin's **Home Assistant
+2026.5.4** native NixOS service. This is not Home Assistant OS: there is no
+Supervisor or app/add-on store, and the native installation method is
+[unsupported upstream](https://www.home-assistant.io/installation/).
+NixOS manages the service and Python dependencies. Adding integrations with
+additional dependencies requires adding their domain to `extraComponents` in
+that module and rebuilding; selecting an integration in the UI cannot install
+missing packages. No vendor integrations beyond `alexa_devices` are preselected.
+
+### Apply and onboard
+
+On **luminous-lemon**, the user must activate the configuration (this has not
+been done automatically):
+
+```sh
+sudo ./rebuild.sh switch --option builders ''
+systemctl status home-assistant.service
+journalctl -u home-assistant.service -b
+```
+
+The intended Service address is **http://ha/** (full-name fallback:
+<http://ha.tail32462.ts.net/>), after the admin setup below. Until verified,
+from a device connected to the same **Tailscale tailnet**, use the retained
+fallback <http://luminous-lemon:8123> if DNS resolves that name. Otherwise use
+`http://<luminous-lemon-tailscale-IP>:8123` (find it with `tailscale ip -4` on
+the server). Tailnet ACLs must allow access. An alternative is
+`ssh -N -L 8123:127.0.0.1:8123 skainswo@luminous-lemon` over a reachable SSH
+connection, then <http://localhost:8123>. Create the owner account promptly,
+set location/units, and add integrations under **Settings → Devices & services**.
+
+The HTTP listener uses the native defaults (all addresses, port 8123), but the
+NixOS firewall opens TCP **8123 only on `tailscale0`**, not globally or on LAN
+interfaces. Arbitrary LAN clients cannot use the frontend. Tailscale Serve
+proxies Service HTTP port 80 to **http://127.0.0.1:8123**; HA trusts forwarded
+headers only from **127.0.0.1**, not the LAN or entire tailnet. No router
+forwarding, public ingress or TLS termination is configured. Use Tailscale or
+the SSH tunnel rather than sending credentials over untrusted plain HTTP.
+
+`default_config` supplies standard UI/history and discovery components, including
+DHCP, SSDP and Zeroconf. Existing Avahi/mDNS and host networking are retained;
+no additional discovery firewall ports are opened. Devices normally need to
+share the server's LAN/subnet with working multicast. Tailscale transports UI
+access, **not LAN multicast discovery**. VLANs, Wi-Fi client isolation and the
+host firewall (especially inbound SSDP multicast) can prevent discovery; Avahi
+alone does not guarantee it. Discovery is not runtime-tested here. Try a
+supported integration's explicit device IP first; determine the actual network
+and integration requirements before adding narrowly scoped firewall rules.
+No USB coordinator, Matter server, or speculative hardware setup is included.
+
+### Publish the ha Service (one-time admin setup)
+
+Follow [Tailscale Services](https://tailscale.com/docs/features/tailscale-services).
+Read-only inspection found Tailscale **1.98.10**, MagicDNS enabled, an **untagged**
+luminous-lemon, no Service advertisements, and existing node Serve listeners on
+8443/9443 (plus a transient foreground 443 listener). No live tags, policy, SSH
+or Serve changes have been applied. Local CLI access does not provide the admin
+policy; **publication is blocked on admin review/setup**, not just a rebuild.
+
+1. In the [access controls](https://login.tailscale.com/admin/acls), review a
+   suitable host tag and its `tagOwners` with an admin. **Before retagging**, ensure
+   intended clients retain node access (including SSH, existing Serve ports and
+   direct HA TCP 8123) under the tag-based identity, and review the separate
+   Tailscale SSH rules: user-owned/self-based rules may stop matching. Keep a
+   tested local/recovery access path. Then have the admin assign the reviewed
+   host tag to luminous-lemon. This repo intentionally chooses/applies no tag.
+2. In [Services](https://login.tailscale.com/admin/services), define **ha**
+   (`svc:ha`) with endpoint **tcp:80**. In access controls, grant only intended
+   client identities access to destination `svc:ha` on `tcp:80`; this is separate
+   from their retained direct-node access. Manual advertisement approval is
+   sufficient; no automatic-approval policy is required.
+3. After admin setup, the user's switch above automatically starts publication.
+   Check HA and the publication unit:
+
+   ```sh
+   curl --noproxy '*' -I http://127.0.0.1:8123/
+   systemctl status home-assistant-tailscale.service
+   journalctl -u home-assistant-tailscale.service -b
+   tailscale serve status --json
+   ```
+
+   This boot-enabled oneshot runs exactly
+   `tailscale serve --service=svc:ha --http=80 127.0.0.1:8123`. It starts after
+   tailscaled and HA, retries failures every 10 seconds, and stays **active
+   (exited)** after success. Boot and unit changes reapply the route; no manual
+   start is required. Services also persist the route and advertisement in
+   tailscaled's state across reboot.
+   It updates only this Service, preserving node listeners and other Services;
+   do not use `serve reset` or replace the whole Serve config. Verify 8443/9443
+   remain unchanged (foreground sessions may independently come and go).
+4. Approve luminous-lemon's pending **ha** advertisement on the Services admin
+   page. Verify Service status and client access; do not remove the 8123 fallback
+   until that succeeds. Stopping/removing the oneshot does **not** unpublish the
+   persistent route. To retire it deliberately, drain `svc:ha`, wait for active
+   connections to finish, then clear only `svc:ha` using the Serve CLI.
+
+### Service client checks (required after publication)
+
+Use Tailscale **1.94+** clients where possible (Services require 1.86+). Linux
+clients on **1.93 or earlier** need `accept-routes` enabled; review other subnet
+route impacts before changing that setting. Short **http://ha/** also depends
+on each client accepting Tailscale DNS and the `tail32462.ts.net` search suffix:
+it is **not yet verified on real clients**. See
+[MagicDNS](https://tailscale.com/docs/features/magicdns). From each intended client:
+
+```sh
+getent hosts ha
+getent hosts ha.tail32462.ts.net
+curl --noproxy '*' -I http://ha/
+curl --noproxy '*' -I http://ha.tail32462.ts.net/
+```
+
+Then open the UI, log in, and check dashboards/live updates (WebSockets). If the
+short name fails, use <http://ha.tail32462.ts.net/> and fix client DNS/search
+settings. Type **http://** explicitly to avoid browser search/HTTPS-only
+heuristics. This is HTTP inside the encrypted tailnet, not public HTTP.
+HTTPS would require a separate Serve HTTPS endpoint and the **full** MagicDNS
+name/certificate, not `https://ha/`; neither HTTPS nor a custom domain is set up.
+
+### Existing Alexa devices (optional)
+
+Alexa is not required for onboarding or other integrations. To use it, add
+[Alexa Devices](https://www.home-assistant.io/integrations/alexa_devices/)
+in the UI with the relevant Amazon account. This integration requires Amazon
+**authenticator-app MFA** (not just SMS MFA); complete Amazon's authentication
+prompts there, never in tracked Nix. It supports Echo/Alexa built-in devices and
+their supported features, **not a blanket import of everything listed in the
+Alexa app**. It is also not the separate task of exposing HA entities to Alexa
+for voice control.
+
+Inventory each device's brand/model, vendor app/account and protocol before
+migrating. Third-party Alexa-linked devices generally need their own supported
+HA integration. Devices paired directly to an Echo's Zigbee hub may need
+re-pairing and compatible coordinator hardware, which is not configured here.
+[Matter multi-fabric sharing](https://www.home-assistant.io/integrations/matter/)
+may avoid re-pairing for compatible devices/controllers, but requires a separate
+supported Matter setup; it is not enabled by this change.
+
+### State, secrets and backups
+
+Persistent state lives in **`/var/lib/hass`**, owned by `hass` with private
+permissions. UI credentials/tokens live in `.storage`; do not commit or copy
+them into Nix expressions (the Nix store is readable). If an integration needs
+YAML secrets, manually create `/var/lib/hass/secrets.yaml`, owned by `hass:hass`
+with mode `0600`, and reference `!secret name` from Nix rather than its value.
+`configuration.yaml` is generated and replaced by Nix; edit the module instead.
+UI automations, scripts and scenes use separate writable YAML files, and UI
+dashboards remain in runtime storage. Rebuilds preserve this state; NixOS
+rollback does **not** roll back HA database/schema migrations. Back up before
+upgrading and keep this repository/pin for recovery.
+
+In **Settings → System → Backups**, create a backup with local storage selected
+and wait for successful completion. Configure an automatic HA backup schedule
+and local retention there if desired; this configuration does not create HA
+archives by itself. Save the backup emergency kit/encryption key separately
+offline, along with the restic repository password. Test a restore before relying
+on it. See [HA backup documentation](https://www.home-assistant.io/common-tasks/general/#backups).
+
+The existing luminous-lemon restic job additionally backs up
+**`/var/lib/hass/backups`** (the pinned Core local-backup destination). The path
+is created even before first startup, so an empty archive directory does not
+break restic. It does **not** back up the live SQLite database or `.storage`
+directly: copying live database files is not a consistency guarantee. Only
+completed HA archives should be relied on. Schedule HA archive creation well
+before the restic window (03:00–04:00), avoid overlapping archive creation or
+local pruning with restic, and verify both jobs succeeded; an archive still
+being written during restic is not a valid recovery point. After a manual HA
+backup finishes, copy it off-host immediately with:
+
+```sh
+sudo systemctl start restic-backups-luminous-lemon.service
+sudo journalctl -u restic-backups-luminous-lemon.service -n 50
+```
+
+Restic still needs the manually provisioned credentials above. Its existing
+7 daily / 4 weekly / 12 monthly / 3 yearly snapshot retention applies, but only
+to archives present when snapshots ran: it does not create newer HA recovery
+points or prune local HA archives. Monitor freshness and free space. For
+recovery, restore an archive from restic to a separate directory, reprovision
+this NixOS service from the saved pin, then upload/restore the HA archive via
+HA's onboarding/backup UI with its encryption key; do not overwrite a running
+database. OS configuration and external services are not part of a Core backup.
+
+Focused evaluation and generated-YAML tests (no full system/HA package build):
+
+```sh
+nix-build tests/home-assistant.nix --no-out-link --option builders ''
+```
+
+These check host isolation, packaged components, persistent/UI config, narrow
+proxy trust, private firewall scope and archive-only restic paths. The pinned
+Serve CLI is exercised against a fake sandbox-only LocalAPI socket: untagged
+rejection, scoped/idempotent routing and preservation of other listeners,
+advertisements and preferences. No live Tailscale changes occur. They do not
+test admin policy, client DNS, Amazon login, device discovery, the running HA
+service, or recovery on hardware.
+
 ## Hibernation toggle (tropical-turnip)
 
 Set `powerManagement.hibernation.enable` in
