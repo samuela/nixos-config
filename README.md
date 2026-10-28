@@ -43,7 +43,10 @@ Supervisor or app/add-on store, and the native installation method is
 NixOS manages the service and Python dependencies. Adding integrations with
 additional dependencies requires adding their domain to `extraComponents` in
 that module and rebuilding; selecting an integration in the UI cannot install
-missing packages. No vendor integrations beyond `alexa_devices` are preselected.
+missing packages. Optional Alexa Devices (`alexa_devices`), TP-Link Smart Home
+(`tplink`, including Kasa switches), Yeelight (`yeelight`) and HomeKit Device
+(`homekit_controller`) dependencies are included; add devices in the UI after
+rebuilding.
 
 ### Apply and onboard
 
@@ -173,6 +176,89 @@ re-pairing and compatible coordinator hardware, which is not configured here.
 may avoid re-pairing for compatible devices/controllers, but requires a separate
 supported Matter setup; it is not enabled by this change.
 
+### Existing Kasa switches (optional)
+
+Provision the switches in the Kasa app first and keep them on the same LAN as
+luminous-lemon with stable local connectivity. After rebuilding, open
+**Settings → Devices & services → Add Integration → TP-Link Smart Home**
+([integration documentation](https://www.home-assistant.io/integrations/tplink/)).
+If discovery does not find a switch, enter its hostname/IP manually; this is the
+preferred fallback with the unchanged discovery firewall rules. A DHCP reservation
+can keep its address stable. Tailscale UI access does not provide LAN discovery.
+
+Newer models may request the TP-Link account email (case-sensitive) and password
+for local authentication. Enter these only in the HA UI, never in Nix. If needed,
+enable **Third-Party Compatibility** in the Kasa app's settings. Alexa is not a
+prerequisite; existing Alexa pairing can remain unchanged.
+
+### Yeelight bulbs (optional)
+
+[Yeelight](https://www.home-assistant.io/integrations/yeelight/) supports specific
+Wi-Fi models, not all Xiaomi bulbs; check the exact model against its supported
+list. Set up a supported bulb in the Yeelight app and enable **LAN Control**, with
+local connectivity to luminous-lemon. The dependency change is pending the user's
+rebuild above; then retry **Settings → Devices & services → Add Integration →
+Yeelight**. Enter the bulb's IP manually if discovery does not find it; firewall
+rules are unchanged. Configure devices only in the UI, not Nix.
+
+#### Yeelight 1S Color via HomeKit Device
+
+For the already provisioned Yeelight 1S Color (YLDP13YL) at **192.168.4.70**,
+local mDNS advertised **YLBulbColor1s-5927._hap._tcp**, unpaired (`sf=1`), on
+TCP port 80. Use [HomeKit Device](https://www.home-assistant.io/integrations/homekit_controller/)
+(`homekit_controller`), not HomeKit Bridge (`homekit`). After the switch above,
+open **Settings → Devices & services → Add Integration → HomeKit Device →
+YLBulbColor1s-5927** and enter the bulb's printed HomeKit pairing code **only in
+the HA UI**, never in Nix or this repository. Pairing has not been performed or
+verified here.
+
+This local HAP route needs no Yeelight app, LAN Control toggle, Apple device or
+cloud login for this already provisioned, unpaired bulb. Keep its existing Xiaomi
+app pairing; do not reset it. `default_config` already enables Zeroconf, existing
+Avahi is retained, and outgoing TCP 80 is permitted; no new firewall ports are
+needed.
+
+### Dreame L40s Ultra CE (Dreamehome US)
+
+After the user-run switch above, open **Settings → Devices & services → Add
+Integration → Dreame Vacuum → Dreamehome → United States (US)** and select the
+vacuum. Use the **email-registered Dreamehome app account**, matching its app
+region, and enter your own credentials **only in the HA UI**. Phone-number login
+is unsupported; Apple/Google users need a dedicated password set in the app.
+This does not use Alexa, HACS or runtime pip installation. Pairing, firmware and
+custom dashboard/card setup are not changed; no extra firewall ports are opened.
+Login and the real device connection have not been tested.
+
+`nix/dreame-vacuum.nix` packages stable v2.0.2 plus the exact reviewed head
+[`2da4fb76f61934ceadaa69b050a148365ed37cd5`](https://github.com/Tasshack/dreame-vacuum/commit/2da4fb76f61934ceadaa69b050a148365ed37cd5)
+of **unmerged [PR 1919](https://github.com/Tasshack/dreame-vacuum/pull/1919)**,
+not moving master or a later proposed rewrite. This addresses the missing TLS
+server authentication in [issue 1918](https://github.com/Tasshack/dreame-vacuum/issues/1918).
+HTTP uses certifi's public trust store; MQTT alone uses the patch's pinned Dreame
+private CA (despite its “GlobalSign” name, not the public GlobalSign root).
+Review and offline checks cover the reported gaps, not a full cryptographic
+certification: hand-written TLS and permissive handshake-message ordering remain
+maintenance risks. The optional `frontend.py` is deliberately omitted using
+upstream-supported absence handling: no automatic licensed Dreame card,
+fingerprinting/card-delivery API routes or card registration. Native map entities
+remain available.
+
+`nix/mini-racer.nix` pins the official
+[mini-racer 0.14.1 PyPI wheel](https://pypi.org/project/mini-racer/0.14.1/),
+including upstream's **prebuilt V8**, with a fixed hash and native-library
+patching. This is not legacy `py-mini-racer` or a reproducible V8 source build;
+it trusts upstream's binary provenance and is restricted to **x86_64 Linux**.
+The ctypes wrapper and V8 14.4.258.23 execute with the pinned Python 3.14.7;
+cryptography 48.0.0 satisfies the patch's requirement of at least 45.
+
+This third-party integration depends on Dreame's cloud/internet and can break
+with vendor API changes or outages; it is not promised local-only control.
+Custom code runs inside HA and handles sensitive account/device state and maps.
+Keep passwords/tokens out of Git, Nix expressions and the world-readable store;
+protect runtime state and backups. **Encrypted local HA backup creation,
+scheduling, emergency-key custody and restore testing still need user onboarding**
+as described below.
+
 ### State, secrets and backups
 
 Persistent state lives in **`/var/lib/hass`**, owned by `hass` with private
@@ -224,7 +310,25 @@ Focused evaluation and generated-YAML tests (no full system/HA package build):
 nix-build tests/home-assistant.nix --no-out-link --option builders ''
 ```
 
-These check host isolation, packaged components, persistent/UI config, narrow
+Offline Dreame package/import/native-runtime and TLS regression checks:
+
+```sh
+nix-build tests/dreame-vacuum.nix --no-out-link --option builders ''
+```
+
+Before builds, verify `HOME`, the resolved Nix executable/version, shared
+`/nix/store`, and `nix show-config` builders/substituters; use empty builders as
+above and retain the shared cache. The Dreame test imports the packaged component
+and config flow against patched pinned HA Core source and the effective host's
+Python dependency selection, without building or starting the HA service. It
+executes V8 and the bundled map optimizer, checks CE model codes/US and the
+frontend-free flow, and uses generated certificates to check trusted/untrusted,
+expired and wrong-hostname rejection plus HTTP/MQTT trust separation. Signature
+rejection is executed; Finished guards have bounded source checks, not a full
+adversarial handshake suite. Tests forbid network connections and use no account
+credentials. They do not prove cloud login, device operation or complete TLS safety.
+
+These host tests check host isolation, packaged components, persistent/UI config, narrow
 proxy trust, private firewall scope and archive-only restic paths. The pinned
 Serve CLI is exercised against a fake sandbox-only LocalAPI socket: untagged
 rejection, scoped/idempotent routing and preservation of other listeners,

@@ -1,5 +1,10 @@
 # Native Home Assistant; imported only by luminous-lemon.
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   stateDir = config.services.home-assistant.configDir;
@@ -16,7 +21,11 @@ in
       "default_config"
       "met" # Used during onboarding.
       "alexa_devices"
+      "tplink"
+      "yeelight"
+      "homekit_controller"
     ];
+    customComponents = [ (pkgs.callPackage ../nix/dreame-vacuum.nix { }) ];
     # Accounts, integration credentials and dashboards live in runtime .storage,
     # not the Nix store. Keep UI-authored automations/scripts/scenes writable too.
     config = {

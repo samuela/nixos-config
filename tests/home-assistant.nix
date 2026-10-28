@@ -58,6 +58,9 @@ assert
     "default_config"
     "met"
     "alexa_devices"
+    "tplink"
+    "yeelight"
+    "homekit_controller"
   ];
 assert lib.all (
   component: builtins.elem component ha.package.availableComponents
@@ -65,10 +68,32 @@ assert lib.all (
 assert lib.all (
   component: builtins.elem component ha.finalPackage.extraComponents
 ) ha.extraComponents;
+assert builtins.elem
+  "${ha.finalPackage.python3Packages.python-kasa}/${ha.finalPackage.python3Packages.python.sitePackages}"
+  (lib.splitString ":" ha.finalPackage.pythonPath);
+assert builtins.elem
+  "${ha.finalPackage.python3Packages.yeelight}/${ha.finalPackage.python3Packages.python.sitePackages}"
+  (lib.splitString ":" ha.finalPackage.pythonPath);
+assert builtins.elem
+  "${ha.finalPackage.python3Packages.aiohomekit}/${ha.finalPackage.python3Packages.python.sitePackages}"
+  (lib.splitString ":" ha.finalPackage.pythonPath);
 assert lib.hasPrefix "\"${lib.getExe ha.finalPackage}\" "
   c.systemd.services.home-assistant.serviceConfig.ExecStart;
 assert builtins.elem "multi-user.target" c.systemd.targets.home-assistant.wantedBy;
-assert ha.customComponents == [ ];
+assert map (component: component.domain) ha.customComponents == [ "dreame_vacuum" ];
+assert other.services.home-assistant.customComponents == [ ];
+assert (builtins.head ha.customComponents).src.rev == "2da4fb76f61934ceadaa69b050a148365ed37cd5";
+assert lib.all
+  (
+    dependency:
+    builtins.elem "${dependency}/${ha.finalPackage.python3Packages.python.sitePackages}" (
+      lib.splitString ":" ha.finalPackage.pythonPath
+    )
+  )
+  (
+    lib.filter (dependency: dependency ? pythonModule)
+      (builtins.head ha.customComponents).propagatedBuildInputs
+  );
 assert ha.configDir == "/var/lib/hass";
 assert c.users.users.hass.home == ha.configDir;
 assert c.users.users.hass.createHome;
@@ -182,6 +207,10 @@ pkgs.runCommand "home-assistant-config-check"
     for domain, filename in [("automation", "automations.yaml"), ("script", "scripts.yaml"), ("scene", "scenes.yaml")]:
         assert config[domain] == ("include", filename)
     assert "alexa_devices" not in config
+    assert "tplink" not in config
+    assert "yeelight" not in config
+    assert "homekit_controller" not in config
+    assert "dreame_vacuum" not in config
     print("Host scope, components, persistence, firewall, archives and loopback proxy YAML checked")
     PY
     python ${./test_home_assistant_tailscale.py}
