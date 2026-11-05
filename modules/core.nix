@@ -22,13 +22,10 @@ let
   # Tracking release-26.05 branch. Last updated 2026-06-05
   stylix = builtins.fetchTarball "https://github.com/nix-community/stylix/archive/aacc65706d523528aed81f55c2c780aaeb541d55.tar.gz";
 
-  # Pinned to Noctalia v5.0.0-beta.9. Last updated 2026-09-02.
-  # beta.9 fixes a beta.8 regression that crashed the shell when an output
-  # reappeared after a lock was deferred while the compositor was headless
-  # (noctalia-dev/noctalia#3868).
+  # Pin Noctalia independently of the system package set.
   noctaliaSrc = builtins.fetchTarball {
-    url = "https://github.com/noctalia-dev/noctalia/archive/refs/tags/v5.0.0-beta.9.tar.gz";
-    sha256 = "sha256-O07tHqxugZ/XE/90kx/UCZ0YCbHSI88v2ct2ezuCKi4=";
+    url = "https://github.com/noctalia-dev/noctalia/archive/refs/tags/v5.4.1.tar.gz";
+    sha256 = "0ih3aizacgi1v5b5qq907p3j6vsx0wjvnf9hc9gqwasb1dqir8cg";
   };
   # Use Noctalia's pinned nixpkgs so its binary cache remains available.
   noctalia = import noctaliaSrc { };
@@ -599,8 +596,8 @@ in
         # Retry transient fprintd authorization denials while the session is
         # becoming active after resume (noctalia-dev/noctalia#3602).
         # https://github.com/noctalia-dev/noctalia/pull/4365
-        # Backport only the runtime changes to beta.9; the PR's Meson/test
-        # changes target main. Remove once the pinned release includes the fix.
+        # Retain the runtime backport: v5.4.1 still lacks this unmerged fix.
+        # Remove once the pinned release includes it.
         package = noctalia.package.overrideAttrs (old: {
           patches = (old.patches or [ ]) ++ [
             (pkgs.fetchpatch {
@@ -616,7 +613,7 @@ in
         systemd.enable = true;
         settings = ../.config/noctalia/config.toml;
       };
-      # Retain containment while evaluating the v5 beta. The native v5 runtime
+      # Retain containment after upgrading to v5. The native v5 runtime
       # should use substantially less memory than the old Quickshell service.
       systemd.user.services.noctalia.Service = {
         MemoryHigh = "1536M";
