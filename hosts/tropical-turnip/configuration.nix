@@ -269,14 +269,18 @@ in
         '';
       };
 
-  # Ignore logind's lid action and let swayidle's smart-suspend handle suspension.
-  # After the 5-minute inactivity timeout, a closed lid with no external display
-  # suspends regardless of power or audio state. Open-lid and docked sessions keep
-  # the normal power and audio blockers so playback, calls, and AC use stay awake.
-  services.logind.settings.Login.HandleLidSwitch = "ignore";
+  # Suspend immediately on lid closure, including on AC power. Keep docked
+  # sessions (with an external display) running. Do not let media playback
+  # inhibitors prevent lid-triggered suspension while the laptop is in a bag.
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";
+    HandleLidSwitchExternalPower = "suspend";
+    HandleLidSwitchDocked = "ignore";
+    LidSwitchIgnoreInhibited = true;
+  };
 
   # Turn internal screen off/on when lid is closed/opened. This is separate from
-  # suspend handling (which is done by swayidle's smart-suspend based on idle time).
+  # logind's immediate lid-triggered suspension.
   # Only affects eDP-1 (internal display), so external monitors remain on. When
   # closing the lid undocked, pause MPRIS media players in the user session.
   services.acpid = {
