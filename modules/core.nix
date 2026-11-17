@@ -81,10 +81,10 @@ let
     config.allowUnfree = true;
   };
 
-  # Pin Pi 1.1.0 independently of the system and other tools' package sets.
+  # Pin Pi 1.5.2 independently of the system and other tools' package sets.
   pi-nixpkgs-src = builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/131eeb0c76df8402dc8178edd71f53f27e925172.tar.gz";
-    sha256 = "sha256-VuSaUFRmtr2Sh5VhrQWBM8WIo0yRB1+pzkP9PjxwQhg=";
+    url = "https://github.com/NixOS/nixpkgs/archive/b228aa104775ac4523346922555bf92eae1f8990.tar.gz";
+    sha256 = "0zjqlb8bhh8q2zif3a6qnq21b5sh58i632j88i9b98rk2dnp7v3c";
   };
   pi-pkgs = import pi-nixpkgs-src {
     inherit (pkgs.stdenv.hostPlatform) system;
