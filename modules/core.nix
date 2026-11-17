@@ -41,28 +41,29 @@ let
     sha256 = "sha256-RjR8AyvGlWuw16XRj7C1YDEw4E27ciuyPeB2nDMzgTU=";
   };
 
-  # OpenClaw alone follows the pnpm 12 prerequisite and the exact published
-  # update commit. Keep the shared unstable package set on its existing pin.
-  openclaw-nixpkgs-base = builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/e97c70d3e2e777ddff111564204bdb9f1edfa827.tar.gz";
-    sha256 = "sha256-3ZsSU6bgN9OF0kuMbeNddPY07+VqPLwMxO+mNu1qZBw=";
-  };
-  openclaw-nixpkgs-src = pkgs.applyPatches {
-    name = "nixpkgs-pnpm-12-with-openclaw-2026.9.2";
-    src = openclaw-nixpkgs-base;
-    patches = [
-      (builtins.fetchurl {
-        url = "https://github.com/samuela/nixpkgs/commit/7c6e462032fd06680de5c56e44694d8a53677e21.patch";
-        sha256 = "sha256-ElRA3zyZvEvobIfQJQ28b5EE6ZVDncbHWFM09gyFP+I=";
-      })
-    ];
+  # OpenClaw alone tracks nixos-unstable (2026-11-13), overridden from its
+  # packaged 2026.10.5 to 2026.11.4. Keep the shared unstable package set on
+  # its existing pin.
+  openclaw-nixpkgs-src = builtins.fetchTarball {
+    url = "https://github.com/NixOS/nixpkgs/archive/d5cc6833999746cffdfe0598f7bc801a57b887a9.tar.gz";
+    sha256 = "sha256-Wpz/7x/YWnDIBu7yj6ixe8j6fIMsidd9Y+o1PqPF3iM=";
   };
   openclaw-pkgs = import openclaw-nixpkgs-src {
     inherit (pkgs.stdenv.hostPlatform) system;
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = [ "openclaw-2026.9.2" ];
+      permittedInsecurePackages = [ "openclaw-2026.11.4" ];
     };
+    overlays = [
+      (_final: prev: {
+        openclaw = (prev.openclaw.override { version = "2026.11.4"; }).overrideAttrs (old: {
+          src = old.src.override { hash = "sha256-R3q8kRgXm7idp0RG7lGJBSzrWyvYF+nxSBxpmGD3pg8="; };
+          pnpmDepsHash = "sha256-gOP28OmU1l7hyf4fDEqfvndXmmCSGvfGj8x+1r9FmGY=";
+          # 2026.11.4 links the workspace-only solid-lint tool, which is not installed.
+          preFixup = "rm $out/lib/openclaw/node_modules/.pnpm/node_modules/@openclaw/solid-lint";
+        });
+      })
+    ];
   };
 
   unstable-pkgs = import unstable-nixpkgs-src {
