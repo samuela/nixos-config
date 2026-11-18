@@ -59,6 +59,14 @@ let
         openclaw = (prev.openclaw.override { version = "2026.11.4"; }).overrideAttrs (old: {
           src = old.src.override { hash = "sha256-R3q8kRgXm7idp0RG7lGJBSzrWyvYF+nxSBxpmGD3pg8="; };
           pnpmDepsHash = "sha256-gOP28OmU1l7hyf4fDEqfvndXmmCSGvfGj8x+1r9FmGY=";
+          # 2026.11.4's full build already builds the UI with the backend identity.
+          # A second, gitless UI build generates a different identity and causes 503s.
+          buildPhase =
+            assert pkgs.lib.assertMsg (
+              builtins.length (pkgs.lib.splitString "pnpm ui:build\n" old.buildPhase) == 2
+              && pkgs.lib.hasInfix "pnpm build\npnpm ui:build\n" old.buildPhase
+            ) "OpenClaw build recipe changed; revisit the redundant UI build removal";
+            pkgs.lib.replaceStrings [ "pnpm build\npnpm ui:build\n" ] [ "pnpm build\n" ] old.buildPhase;
           # 2026.11.4 links the workspace-only solid-lint tool, which is not installed.
           preFixup = "rm $out/lib/openclaw/node_modules/.pnpm/node_modules/@openclaw/solid-lint";
         });
